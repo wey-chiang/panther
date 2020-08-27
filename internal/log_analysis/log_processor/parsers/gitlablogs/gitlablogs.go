@@ -41,50 +41,52 @@ const (
 	TypeProduction = PantherPrefix + ".Production"
 )
 
-func init() {
-	logtypes.MustRegister(
-		logtypes.Config{
-			Name: TypeAPI,
-			Description: `GitLab log for API requests received from GitLab.
-NOTE: We are using the latest version of GitLab API logs. Some fields differ from the official documentation`,
-			ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#api_jsonlog`,
-			Schema:       API{},
-			NewParser:    parsers.AdapterFactory(&APIParser{}),
-		},
-		logtypes.Config{
-			Name:         TypeAudit,
-			Description:  `GitLab log file containing changes to group or project settings`,
-			ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#audit_jsonlog`,
-			Schema:       Audit{},
-			NewParser:    parsers.AdapterFactory(&AuditParser{}),
-		},
-		logtypes.Config{
-			Name:         TypeExceptions,
-			Description:  `GitLab log file containing changes to group or project settings`,
-			ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#exceptions_jsonlog`,
-			Schema:       Exceptions{},
-			NewParser:    parsers.AdapterFactory(&ExceptionsParser{}),
-		},
-		logtypes.Config{
-			Name:         TypeGit,
-			Description:  `GitLab log file containing all failed requests from GitLab to Git repositories.`,
-			ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#git_jsonlog`,
-			Schema:       Git{},
-			NewParser:    parsers.AdapterFactory(&GitParser{}),
-		},
-		logtypes.Config{
-			Name:         TypeIntegrations,
-			Description:  `GitLab log with information about integrations activities such as Jira, Asana, and Irker services.`,
-			ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#integrations_jsonlog`,
-			Schema:       Integrations{},
-			NewParser:    parsers.AdapterFactory(&IntegrationsParser{}),
-		},
-		logtypes.Config{
-			Name:         TypeProduction,
-			Description:  `GitLab log for Production controller requests received from GitLab`,
-			ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#production_jsonlog`,
-			Schema:       Production{},
-			NewParser:    parsers.AdapterFactory(&ProductionParser{}),
-		},
-	)
+func LogTypes() logtypes.Group {
+	return logTypes
 }
+
+var logTypes = logtypes.MustBuildGroup(
+	logtypes.Config{
+		Name: TypeAPI,
+		Description: `GitLab log for API requests received from GitLab.
+		NOTE: We are using the latest version of GitLab API logs. Some fields differ from the official documentation`,
+		ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#api_jsonlog`,
+		Schema:       API{},
+		NewParser:    parsers.AdapterFactory(&APIParser{}),
+	},
+	logtypes.Config{
+		Name:         TypeAudit,
+		Description:  `GitLab log file containing changes to group or project settings`,
+		ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#audit_jsonlog`,
+		Schema:       Audit{},
+		NewParser:    parsers.AdapterFactory(&AuditParser{}),
+	},
+	logtypes.Config{
+		Name:         TypeExceptions,
+		Description:  `GitLab log file containing changes to group or project settings`,
+		ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#exceptions_jsonlog`,
+		Schema:       Exceptions{},
+		NewParser:    parsers.AdapterFactory(&ExceptionsParser{}),
+	},
+	logtypes.Config{
+		Name:         TypeGit,
+		Description:  `GitLab log file containing all failed requests from GitLab to Git repositories.`,
+		ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#git_jsonlog`,
+		Schema:       Git{},
+		NewParser:    parsers.AdapterFactory(&GitParser{}),
+	},
+	logtypes.Config{
+		Name:         TypeIntegrations,
+		Description:  `GitLab log with information about integrations activities such as Jira, Asana, and Irker services.`,
+		ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#integrations_jsonlog`,
+		Schema:       Integrations{},
+		NewParser:    parsers.AdapterFactory(&IntegrationsParser{}),
+	},
+	logtypes.Config{
+		Name:         TypeProduction,
+		Description:  `GitLab log for Production controller requests received from GitLab`,
+		ReferenceURL: `https://docs.gitlab.com/ee/administration/logs.html#production_jsonlog`,
+		Schema:       Production{},
+		NewParser:    parsers.AdapterFactory(&ProductionParser{}),
+	},
+)

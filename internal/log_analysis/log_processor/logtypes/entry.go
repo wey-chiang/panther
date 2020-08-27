@@ -19,14 +19,16 @@ package logtypes
  */
 
 import (
+	"net/url"
+	"time"
+
 	jsoniter "github.com/json-iterator/go"
+	"github.com/pkg/errors"
+
 	"github.com/panther-labs/panther/api/lambda/core/log_analysis/log_processor/models"
 	"github.com/panther-labs/panther/internal/log_analysis/awsglue"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/pantherlog"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers"
-	"github.com/pkg/errors"
-	"net/url"
-	"time"
 )
 
 // Entry describes a log event type.

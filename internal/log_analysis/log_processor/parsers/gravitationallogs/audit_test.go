@@ -19,10 +19,10 @@ package gravitationallogs_test
  */
 
 import (
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/gravitationallogs"
 	"testing"
 
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/logtypes/logtesting"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/gravitationallogs"
 )
 
 func TestTeleportAudit(t *testing.T) {

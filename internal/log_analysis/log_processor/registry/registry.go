@@ -24,42 +24,70 @@ import (
 	"github.com/panther-labs/panther/internal/log_analysis/awsglue"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/logtypes"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers"
-
-	// Register log types in init() blocks
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/apachelogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/awslogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/fluentdsyslogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/gitlablogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/gravitationallogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/juniperlogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/laceworklogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/nginxlogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/osquerylogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/osseclogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/suricatalogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/sysloglogs"
-	_ "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/zeeklogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/apachelogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/awslogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/fluentdsyslogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/gitlablogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/gravitationallogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/juniperlogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/laceworklogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/nginxlogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/osquerylogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/osseclogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/suricatalogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/sysloglogs"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/zeeklogs"
 )
 
+var nativeLogTypes = logtypes.MustMerge(
+	apachelogs.LogTypes(),
+	awslogs.LogTypes(),
+	fluentdsyslogs.LogTypes(),
+	gitlablogs.LogTypes(),
+	gravitationallogs.LogTypes(),
+	juniperlogs.LogTypes(),
+	laceworklogs.LogTypes(),
+	nginxlogs.LogTypes(),
+	osquerylogs.LogTypes(),
+	osseclogs.LogTypes(),
+	suricatalogs.LogTypes(),
+	sysloglogs.LogTypes(),
+	zeeklogs.LogTypes(),
+)
+var availableLogTypes = logtypes.MustBuildRegistry(nativeLogTypes)
+
+func LogTypes() logtypes.Group {
+	return availableLogTypes
+}
+
 // Default returns the default log type registry
-func Default() *logtypes.Registry {
-	return logtypes.DefaultRegistry()
+func Register(group logtypes.Group) error {
+	return availableLogTypes.Register(group)
+}
+func Del(logType string) bool {
+	if nativeLogTypes.Find(logType) != nil {
+		panic(`tried to remove native log type`)
+	}
+	return availableLogTypes.Del(logType)
 }
 
 // Lookup finds a log type entry or panics
 // Panics if the name is not registered
 func Lookup(name string) logtypes.Entry {
-	return logtypes.DefaultRegistry().MustGet(name)
+	return logtypes.MustFind(LogTypes(), name)
 }
 
 // AvailableLogTypes returns all available log types in the default registry
-func AvailableLogTypes() []string {
-	return logtypes.DefaultRegistry().LogTypes()
+func AvailableLogTypes() (logTypes []string) {
+	for _, e := range LogTypes().Entries() {
+		logTypes = append(logTypes, e.String())
+	}
+	return
 }
 
 // AvailableTables returns a slice containing the Glue tables for all available log types
 func AvailableTables() (tables []*awsglue.GlueTableMetadata) {
-	entries := logtypes.DefaultRegistry().Entries()
+	entries := LogTypes().Entries()
 	tables = make([]*awsglue.GlueTableMetadata, len(entries))
 	for i, entry := range entries {
 		tables[i] = entry.GlueTableMeta()
@@ -70,7 +98,7 @@ func AvailableTables() (tables []*awsglue.GlueTableMetadata) {
 // Available parsers returns log parsers for all available log types with nil parameters.
 // Panics if a parser factory in the default registry fails with nil params.
 func AvailableParsers() map[string]parsers.Interface {
-	entries := logtypes.DefaultRegistry().Entries()
+	entries := LogTypes().Entries()
 	available := make(map[string]parsers.Interface, len(entries))
 	for _, entry := range entries {
 		logType := entry.Describe().Name

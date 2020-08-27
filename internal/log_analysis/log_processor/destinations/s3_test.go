@@ -169,7 +169,7 @@ func newS3Destination(logTypes ...string) *testS3Destination {
 			s3Uploader:          mockS3Uploader,
 			maxBufferedMemBytes: 10 * 1024 * 1024, // an arbitrary amount enough to hold default test data
 			maxDuration:         maxDuration,
-			registry:            newRegistry(logTypes...),
+			logTypesGroup:       newRegistry(logTypes...),
 			jsonAPI:             common.BuildJSON(),
 		},
 		mockSns:        mockSns,
@@ -178,10 +178,12 @@ func newS3Destination(logTypes ...string) *testS3Destination {
 }
 
 func newRegistry(names ...string) *logtypes.Registry {
-	names = append([]string{testLogType}, names...)
-	r := logtypes.Registry{}
-	for _, name := range names {
-		_, err := r.Register(logtypes.Config{
+	return logtypes.MustBuildRegistry(logtypes.MustBuildGroup(entryBuilders(names...)...))
+}
+
+func entryBuilders(names ...string) (entries []logtypes.EntryBuilder) {
+	for _, name := range append([]string{testLogType}, names...) {
+		entries = append(entries, logtypes.Config{
 			Name:         name,
 			Description:  "description",
 			ReferenceURL: "-",
@@ -192,11 +194,8 @@ func newRegistry(names ...string) *logtypes.Registry {
 				return testutil.ParserConfig{}.Parser(), nil
 			}),
 		})
-		if err != nil {
-			panic(err)
-		}
 	}
-	return &r
+	return
 }
 
 func TestSendDataToS3BeforeTerminating(t *testing.T) {

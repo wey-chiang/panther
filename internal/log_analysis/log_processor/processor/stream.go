@@ -146,7 +146,7 @@ func streamEvents(sqsClient sqsiface.SQSAPI, deadlineTime time.Time, event event
 
 	// Use a properly configured JSON API for Athena quirks
 	jsonAPI := common.BuildJSON()
-	registeredLogTypes := registry.Default()
+	registeredLogTypes := registry.LogTypes()
 	// process streamChan until closed (blocks)
 	err = processFunc(streamChan, destinations.CreateS3Destination(registeredLogTypes, jsonAPI))
 	if err != nil { // prefer Process() error to readEventError

@@ -23,20 +23,8 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/logtypes"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/pantherlog/null"
 )
-
-const LogTypePrefix = "Gravitational"
-
-// TypeTeleportAudit registers and exports the logtype entry for Gravitational.TeleportAudit logs
-var TypeTeleportAudit = logtypes.MustRegisterJSON(logtypes.Desc{
-	Name:         LogTypePrefix + ".TeleportAudit",
-	Description:  `Teleport logs events like successful user logins along with the metadata like remote IP address, time and the session ID.`,
-	ReferenceURL: `https://gravitational.com/teleport/docs/admin-guide/#audit-log`,
-}, func() interface{} {
-	return &TeleportAudit{}
-})
 
 // TeleportAudit is a log event in a Teleport audit log file.
 // NOTE: Each event type has a different mix of fields.

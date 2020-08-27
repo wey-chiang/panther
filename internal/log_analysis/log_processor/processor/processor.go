@@ -58,7 +58,7 @@ var (
 // and forwarding the logs to the appropriate destination. Any errors will cause Lambda invocation to fail
 func Process(dataStreams chan *common.DataStream, destination destinations.Destination) error {
 	factory := func(r *common.DataStream) *Processor {
-		return NewProcessor(r, registry.Default())
+		return NewProcessor(r, registry.LogTypes())
 	}
 	return process(dataStreams, destination, factory)
 }
@@ -184,8 +184,8 @@ type Processor struct {
 	operation  *oplog.Operation
 }
 
-func NewProcessor(input *common.DataStream, registry *logtypes.Registry) *Processor {
-	entries := registry.Entries(input.LogTypes...)
+func NewProcessor(input *common.DataStream, logTypes logtypes.Group) *Processor {
+	entries := logtypes.AppendFind(nil, logTypes, input.LogTypes...)
 
 	parsers := make(map[string]parsers.Interface, len(entries))
 	for _, entry := range entries {

@@ -95,7 +95,7 @@ func main() {
 		logTypes = append(logTypes, *LOGTYPE)
 	} else {
 		// Use all available log types
-		logTypes = registry.Default().LogTypes()
+		logTypes = registry.AvailableLogTypes()
 	}
 
 	dataStream := &common.DataStream{
@@ -135,7 +135,7 @@ func main() {
 	jsonAPI := common.BuildJSON()
 
 	// Use the global registry
-	dest := destinations.CreateS3Destination(registry.Default(), jsonAPI)
+	dest := destinations.CreateS3Destination(registry.LogTypes(), jsonAPI)
 
 	err = processor.Process(streamChan, dest)
 	if err != nil {

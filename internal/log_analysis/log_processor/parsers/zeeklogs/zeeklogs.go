@@ -31,7 +31,7 @@ func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(logtypes.Config{
+var logTypes = logtypes.Must("Zeek", logtypes.Config{
 	Name:         TypeZeekDNS,
 	Description:  `Zeek DNS activity`,
 	ReferenceURL: `https://docs.zeek.org/en/current/scripts/base/protocols/dns/main.zeek.html#type-DNS::Info`,

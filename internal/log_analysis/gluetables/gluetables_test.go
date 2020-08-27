@@ -80,7 +80,7 @@ func TestDeployedTablesSignature(t *testing.T) {
 	assert.Equal(t, sig, sig2)
 
 	// change the data, the sigs should be different
-	require.NoError(t, registry.Register(logtypes.Must(logtypes.Config{
+	require.NoError(t, registry.Register(logtypes.MustBuild(logtypes.Config{
 		Name:         "Foo.Bar",
 		Description:  "foo",
 		ReferenceURL: "-",

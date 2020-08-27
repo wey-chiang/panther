@@ -20,6 +20,7 @@ package logtypes
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -29,9 +30,26 @@ type Finder interface {
 }
 
 type Group interface {
+	Name() string
+	Collection
 	Finder
-	Len() int
+}
+
+type Collection interface {
 	Entries() []Entry
+	Len() int
+}
+
+func FilterPrefix(col Collection, prefix string) (entries []Entry) {
+	if col == nil {
+		return
+	}
+	for _, entry := range col.Entries() {
+		if strings.HasPrefix(entry.Name(), prefix) {
+			entries = append(entries, entry)
+		}
+	}
+	return
 }
 
 func AppendFind(entries []Entry, finder Finder, names ...string) []Entry {
@@ -44,6 +62,7 @@ func AppendFind(entries []Entry, finder Finder, names ...string) []Entry {
 }
 
 type group struct {
+	name    string
 	entries map[string]Entry
 }
 
@@ -56,16 +75,17 @@ func MustFind(f Finder, name string) Entry {
 	panic(fmt.Sprintf(`entry %q not found`, name))
 }
 
-func MustMerge(groups ...Group) Group {
-	merged, err := Merge(groups...)
+func MustMerge(name string, groups ...Group) Group {
+	merged, err := Merge(name, groups...)
 	if err != nil {
 		panic(err)
 	}
 	return merged
 }
 
-func Merge(groups ...Group) (Group, error) {
+func Merge(name string, groups ...Group) (Group, error) {
 	merged := group{
+		name:    name,
 		entries: map[string]Entry{},
 	}
 	for _, g := range groups {
@@ -80,15 +100,17 @@ func Merge(groups ...Group) (Group, error) {
 	return &merged, nil
 }
 
-func MustBuildGroup(entries ...EntryBuilder) Group {
-	index, err := BuildGroup(entries...)
+// Must builds a group of logtypes or panics
+func Must(name string, entries ...EntryBuilder) Group {
+	index, err := BuildGroup(name, entries...)
 	if err != nil {
 		panic(err)
 	}
 	return index
 }
 
-func BuildGroup(entries ...EntryBuilder) (Group, error) {
+// BuildGroup builds a read-only collection of distinct log type entries.
+func BuildGroup(name string, entries ...EntryBuilder) (Group, error) {
 	index := group{
 		entries: make(map[string]Entry, len(entries)),
 	}
@@ -106,17 +128,25 @@ func BuildGroup(entries ...EntryBuilder) (Group, error) {
 	return &index, nil
 }
 
-func (i *group) Find(name string) Entry {
-	return i.entries[name]
+// Find implements Group
+func (g *group) Find(name string) Entry {
+	return g.entries[name]
 }
 
-func (i *group) Entries() (entries []Entry) {
-	for _, entry := range i.entries {
+// Entries implements Group
+func (g *group) Entries() (entries []Entry) {
+	for _, entry := range g.entries {
 		entries = append(entries, entry)
 	}
 	return entries
 }
 
-func (i *group) Len() int {
-	return len(i.entries)
+// Len implements Group
+func (g *group) Len() int {
+	return len(g.entries)
+}
+
+// Name implements Group
+func (g *group) Name() string {
+	return g.name
 }

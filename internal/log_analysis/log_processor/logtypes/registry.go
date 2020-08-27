@@ -27,6 +27,7 @@ import (
 // Registry is a collection of log type entries.
 // It is safe to use a registry from multiple goroutines.
 type Registry struct {
+	name  string
 	mu    sync.RWMutex
 	group group
 }
@@ -49,18 +50,24 @@ func (r *Registry) Entries() []Entry {
 	return r.group.Entries()
 }
 
+func (r *Registry) Name() string {
+	return r.name
+}
+
 var _ Group = (*Registry)(nil)
 
-func MustBuildRegistry(groups ...Group) *Registry {
-	r, err := BuildRegistry(groups...)
+func MustBuildRegistry(name string, groups ...Group) *Registry {
+	r, err := BuildRegistry(name, groups...)
 	if err != nil {
 		panic(err)
 	}
 	return r
 }
 
-func BuildRegistry(groups ...Group) (*Registry, error) {
-	r := Registry{}
+func BuildRegistry(name string, groups ...Group) (*Registry, error) {
+	r := Registry{
+		name: name,
+	}
 	for _, g := range groups {
 		if err := r.mergeGroup(g); err != nil {
 			return nil, err

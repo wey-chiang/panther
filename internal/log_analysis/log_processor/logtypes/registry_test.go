@@ -47,7 +47,7 @@ func TestRegistry(t *testing.T) {
 			return nil, nil
 		}),
 	}
-	api := Must(config)
+	api := MustBuild(config)
 	err := r.Register(api)
 	require.NoError(t, err)
 	require.NotNil(t, api)
@@ -78,11 +78,11 @@ func TestRegistry(t *testing.T) {
 	require.Nil(t, nilEntry2)
 
 	require.Panics(t, func() {
-		r.MustRegister(api)
+		r.MustRegister(Must(api.String(), api))
 	})
 	require.True(t, r.Del(api.String()))
 	require.NotPanics(t, func() {
-		r.MustRegister(api)
+		r.MustRegister(Must(api.String(), api))
 	})
 
 	require.Equal(t, api, r.Find("Foo.Bar"))

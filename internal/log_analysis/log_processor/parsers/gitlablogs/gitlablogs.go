@@ -25,27 +25,28 @@ import (
  */
 
 const (
-	// PantherPrefix is the prefix of all logs parsed by this package
-	PantherPrefix = "GitLab"
+	// LogTypePrefix is the prefix of all logs parsed by this package and the name of the log type group
+	LogTypePrefix = "GitLab"
 	// TypeAPI is the type of the GitLabAPI log record
-	TypeAPI = PantherPrefix + ".API"
+	TypeAPI = LogTypePrefix + ".API"
 	// TypeAudit is the log type of Audit log records
-	TypeAudit = PantherPrefix + ".Audit"
+	TypeAudit = LogTypePrefix + ".Audit"
 	// TypeExceptions is the log type of Exceptions log records
-	TypeExceptions = PantherPrefix + ".Exceptions"
+	TypeExceptions = LogTypePrefix + ".Exceptions"
 	// TypeGit is the log type of Git log records
-	TypeGit = PantherPrefix + ".Git"
+	TypeGit = LogTypePrefix + ".Git"
 	// TypeIntegrations is the log type of GitLabIntegrations
-	TypeIntegrations = PantherPrefix + ".Integrations"
+	TypeIntegrations = LogTypePrefix + ".Integrations"
 	// TypeProduction is the type of the GitLabRails log record
-	TypeProduction = PantherPrefix + ".Production"
+	TypeProduction = LogTypePrefix + ".Production"
 )
 
+// LogTypes exports the available log type entries
 func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(
+var logTypes = logtypes.Must(LogTypePrefix,
 	logtypes.Config{
 		Name: TypeAPI,
 		Description: `GitLab log for API requests received from GitLab.

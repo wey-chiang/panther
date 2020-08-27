@@ -31,7 +31,7 @@ func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(logtypes.Config{
+var logTypes = logtypes.Must("OSSEC", logtypes.Config{
 	Name:         TypeEventInfo,
 	Description:  `OSSEC EventInfo alert parser. Currently only JSON output is supported.`,
 	ReferenceURL: `https://www.ossec.net/docs/docs/formats/alerts.html`,

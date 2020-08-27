@@ -39,7 +39,9 @@ type Entry interface {
 	Schema() interface{}
 	GlueTableMeta() *awsglue.GlueTableMetadata
 	String() string
+	// Entry should be usable as an EntryBuilder that returns itself with no error
 	EntryBuilder
+	// Entry should implement Group for a single entry
 	Group
 }
 
@@ -49,8 +51,8 @@ type EntryBuilder interface {
 	BuildEntry() (Entry, error)
 }
 
-// Must builds an entry from an EntryBuilder or panics
-func Must(builder EntryBuilder) Entry {
+// MustBuild builds an entry from an EntryBuilder or panics
+func MustBuild(builder EntryBuilder) Entry {
 	entry, err := builder.BuildEntry()
 	if err != nil {
 		panic(err)
@@ -174,10 +176,23 @@ func (c Config) BuildEntry() (Entry, error) {
 }
 
 type entry struct {
-	Desc
+	desc          Desc
 	schema        interface{}
 	newParser     parsers.FactoryFunc
 	glueTableMeta *awsglue.GlueTableMetadata
+}
+
+func newEntry(desc Desc, schema interface{}, fac parsers.Factory) *entry {
+	return &entry{
+		desc:          desc,
+		schema:        schema,
+		newParser:     fac.NewParser,
+		glueTableMeta: awsglue.NewGlueTableMetadata(models.LogData, desc.Name, desc.Description, awsglue.GlueTableHourly, schema),
+	}
+}
+
+func (e *entry) Name() string {
+	return e.desc.Name
 }
 
 func (e *entry) Find(logType string) Entry {
@@ -199,21 +214,12 @@ func (e *entry) BuildEntry() (Entry, error) {
 	return e, nil
 }
 
-func newEntry(desc Desc, schema interface{}, fac parsers.Factory) *entry {
-	return &entry{
-		Desc:          desc,
-		schema:        schema,
-		newParser:     fac.NewParser,
-		glueTableMeta: awsglue.NewGlueTableMetadata(models.LogData, desc.Name, desc.Description, awsglue.GlueTableHourly, schema),
-	}
-}
-
 func (e *entry) Describe() Desc {
-	return e.Desc
+	return e.desc
 }
 
 func (e *entry) String() string {
-	return e.Desc.Name
+	return e.desc.Name
 }
 
 func (e *entry) Schema() interface{} {

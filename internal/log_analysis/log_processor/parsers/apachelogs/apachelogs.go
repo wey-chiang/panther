@@ -35,11 +35,12 @@ const (
 	TypeAccessCommon   = `Apache.AccessCommon`
 )
 
+// LogTypes exports the available log type entries
 func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(
+var logTypes = logtypes.Must("Apache",
 	logtypes.Config{
 		Name:         TypeAccessCombined,
 		Description:  `Apache HTTP server access logs using the 'combined' format`,

@@ -32,7 +32,7 @@ func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(
+var logTypes = logtypes.Must("Suricata",
 	logtypes.Config{
 		Name:         TypeAnomaly,
 		Description:  `Suricata parser for the Anomaly event type in the EVE JSON output.`,

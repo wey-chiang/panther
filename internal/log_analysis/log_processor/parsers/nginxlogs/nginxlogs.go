@@ -32,7 +32,7 @@ func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(
+var logTypes = logtypes.Must("Nginx",
 	logtypes.Config{
 		Name:         TypeAccess,
 		Description:  `Access Logs for your Nginx server. We currently support Nginx 'combined' format.`,

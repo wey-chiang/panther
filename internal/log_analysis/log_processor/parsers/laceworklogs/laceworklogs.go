@@ -27,7 +27,7 @@ func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(
+var logTypes = logtypes.Must("Lacework",
 	logtypes.Config{
 		Name:         "Lacework.Events",
 		Description:  LaceworkDesc,

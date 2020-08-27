@@ -29,15 +29,17 @@ import (
 )
 
 const (
-	TypeAuditLog = "GCP.AuditLog"
+	LogTypePrefix = "GCP"
+	TypeAuditLog  = LogTypePrefix + ".AuditLog"
 )
 
+// LogTypes exports the available log type entries
 func LogTypes() logtypes.Group {
 	return logTypes
 }
 
 //nolint: lll
-var logTypes = logtypes.MustBuildGroup(logtypes.Config{
+var logTypes = logtypes.Must(LogTypePrefix, logtypes.Config{
 	Name: TypeAuditLog,
 	Description: `Cloud Audit Logs maintains three audit logs for each Google Cloud project, folder, and organization: Admin Activity, Data Access, and System Event.
 Google Cloud services write audit log entries to these logs to help you answer the questions of "who did what, where, and when?" within your Google Cloud resources.

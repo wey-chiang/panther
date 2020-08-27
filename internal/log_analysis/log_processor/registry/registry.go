@@ -39,7 +39,7 @@ import (
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/zeeklogs"
 )
 
-var nativeLogTypes = logtypes.MustMerge(
+var registeredLogTypes = logtypes.MustMerge("registered",
 	apachelogs.LogTypes(),
 	awslogs.LogTypes(),
 	fluentdsyslogs.LogTypes(),
@@ -54,18 +54,20 @@ var nativeLogTypes = logtypes.MustMerge(
 	sysloglogs.LogTypes(),
 	zeeklogs.LogTypes(),
 )
-var availableLogTypes = logtypes.MustBuildRegistry(nativeLogTypes)
 
+var availableLogTypes = logtypes.MustBuildRegistry("available", registeredLogTypes)
+
+// LogTypes exposes all available log types as a read-only group.
 func LogTypes() logtypes.Group {
 	return availableLogTypes
 }
 
-// Default returns the default log type registry
+// Register adds a group to the registry of available log types
 func Register(group logtypes.Group) error {
 	return availableLogTypes.Register(group)
 }
 func Del(logType string) bool {
-	if nativeLogTypes.Find(logType) != nil {
+	if registeredLogTypes.Find(logType) != nil {
 		panic(`tried to remove native log type`)
 	}
 	return availableLogTypes.Del(logType)

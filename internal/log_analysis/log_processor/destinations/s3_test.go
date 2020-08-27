@@ -178,7 +178,7 @@ func newS3Destination(logTypes ...string) *testS3Destination {
 }
 
 func newRegistry(names ...string) *logtypes.Registry {
-	return logtypes.MustBuildRegistry(logtypes.MustBuildGroup(entryBuilders(names...)...))
+	return logtypes.MustBuildRegistry("test", logtypes.Must("", entryBuilders(names...)...))
 }
 
 func entryBuilders(names ...string) (entries []logtypes.EntryBuilder) {

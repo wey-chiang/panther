@@ -33,7 +33,7 @@ func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(
+var logTypes = logtypes.Must("Syslog",
 	logtypes.Config{
 		Name:         TypeRFC3164,
 		Description:  `Syslog parser for the RFC3164 format (ie. BSD-syslog messages)`,

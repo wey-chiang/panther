@@ -34,7 +34,7 @@ func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(
+var logTypes = logtypes.Must("Osquery",
 	logtypes.Config{
 		Name:         TypeBatch,
 		Description:  `Batch contains all the data included in OsQuery batch logs`,

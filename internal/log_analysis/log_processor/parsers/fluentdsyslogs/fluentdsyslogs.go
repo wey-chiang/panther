@@ -28,11 +28,12 @@ const (
 	TypeRFC5424 = "Fluentd.Syslog5424"
 )
 
+// LogTypes exports the available log type entries
 func LogTypes() logtypes.Group {
 	return logTypes
 }
 
-var logTypes = logtypes.MustBuildGroup(
+var logTypes = logtypes.Must("Fluentd",
 	logtypes.Config{
 		Name:         TypeRFC3164,
 		Description:  `Fluentd syslog parser for the RFC3164 format (ie. BSD-syslog messages)`,

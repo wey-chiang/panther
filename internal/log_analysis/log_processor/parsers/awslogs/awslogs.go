@@ -36,12 +36,13 @@ const (
 	TypeVPCFlow           = "AWS.VPCFlow"
 )
 
+// LogTypes exports the available log type entries
 func LogTypes() logtypes.Group {
 	return logTypes
 }
 
 // nolint:lll
-var logTypes = logtypes.MustBuildGroup(
+var logTypes = logtypes.Must("AWS",
 	logtypes.Config{
 		Name:         TypeALB,
 		Description:  `Application Load Balancer logs Layer 7 network logs for your application load balancer.`,

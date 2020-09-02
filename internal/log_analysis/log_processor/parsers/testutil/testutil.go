@@ -22,7 +22,6 @@ package testutil
 
 import (
 	"bufio"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/registry"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -40,6 +39,7 @@ import (
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/pantherlog/omitempty"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/pantherlog/tcodec"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/registry"
 )
 
 // For new parser tests use `CheckPantherParser` instead

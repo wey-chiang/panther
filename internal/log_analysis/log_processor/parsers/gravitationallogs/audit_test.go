@@ -1,4 +1,4 @@
-package gravitationallogs
+package gravitationallogs_test
 
 /**
  * Panther is a Cloud-Native SIEM for the Modern Security Team.
@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/gravitationallogs"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/testutil"
 )
 
@@ -35,7 +36,7 @@ func TestTeleportAudit(t *testing.T) {
 	for _, tc := range []testCase{
 		{
 			Name:    "session.start",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: `{
 			  "addr.local": "127.0.0.1:3022",
 			  "addr.remote": "1.1.1.1:63558",
@@ -85,12 +86,12 @@ func TestTeleportAudit(t *testing.T) {
 				  "p_any_domain_names": ["ip-172-31-14-137.us-west-2.compute.internal"],
 				  "p_any_trace_ids": ["e527ab2a-d882-11ea-9f82-0a588c28e4c2"],
 				  "p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 		{
 			Name:    "session.end",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: `{
 			  "code": "T2004I",
 			  "ei": 22,
@@ -136,12 +137,12 @@ func TestTeleportAudit(t *testing.T) {
 				  "p_any_domain_names": ["ip-172-31-14-137.us-west-2.compute.internal"],
 				  "p_any_trace_ids": ["e527ab2a-d882-11ea-9f82-0a588c28e4c2"],
 				  "p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 		{
 			Name:    "session.data",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: ` {
 				"addr.local": "127.0.0.1:3022",
 				"addr.remote": "1.1.1.1:63558",
@@ -176,12 +177,12 @@ func TestTeleportAudit(t *testing.T) {
 				    "p_any_ip_addresses": ["1.1.1.1","127.0.0.1"],
 					"p_any_trace_ids": ["e527ab2a-d882-11ea-9f82-0a588c28e4c2"],
 					"p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 		{
 			Name:    "session.network",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: `{
 				"cgroup_id": 4294967372,
 				"code": "T4002I",
@@ -224,12 +225,12 @@ func TestTeleportAudit(t *testing.T) {
 				  "p_any_trace_ids": ["7e2f235d-d18c-4e77-a4c8-6e07d3cd10f1"],
 				  "p_any_ip_addresses": ["1.1.1.1","2.1.1.1"],
 				  "p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 		{
 			Name:    "session.command",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: `{
 			  "argv": [
 				"-u"
@@ -275,12 +276,12 @@ func TestTeleportAudit(t *testing.T) {
 				  "p_event_time": "2020-08-07T07:52:09.932Z",
 				  "p_any_trace_ids": ["e527ab2a-d882-11ea-9f82-0a588c28e4c2"],
 				  "p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 		{
 			Name:    "user.create",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: `{
 			  "code": "T1002I",
 			  "connector": "github",
@@ -305,12 +306,12 @@ func TestTeleportAudit(t *testing.T) {
 				  "user": "system",
 				  "p_event_time": "2020-08-07T07:39:42Z",
 				  "p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 		{
 			Name:    "user.login",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: `{
 			  "code": "T1001W",
 			  "error": "list of user teams is empty, did you grant access?",
@@ -331,12 +332,12 @@ func TestTeleportAudit(t *testing.T) {
 				  "uid": "8750c3dd-8fcb-4f1e-8cc4-634473d1e8bc",
 				  "p_event_time": "2020-08-06T20:43:13Z",
 				  "p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 		{
 			Name:    "github.created",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: `{
 			  "code": "T8000I",
 			  "event": "github.created",
@@ -355,12 +356,12 @@ func TestTeleportAudit(t *testing.T) {
 				  "user": "411b9b66-b686-471a-b2c6-f6dc6c745f93.aws",
 				  "p_event_time": "2020-08-06T20:34:17Z",
 				  "p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 		{
 			Name:    "session.leave",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: `{
 			  "code": "T2003I",
 			  "ei": 34,
@@ -386,12 +387,12 @@ func TestTeleportAudit(t *testing.T) {
 				  "p_event_time": "2020-08-06T20:41:24.042Z",
 				  "p_any_trace_ids": ["49aa4466-d824-11ea-a94f-0a588c28e4c2"],
 				  "p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 		{
 			Name:    "resize",
-			LogType: TypeTeleportAudit,
+			LogType: gravitationallogs.TypeTeleportAudit,
 			Input: `{
 			  "code": "T2002I",
 			  "ei": 1,
@@ -421,13 +422,13 @@ func TestTeleportAudit(t *testing.T) {
 				  "p_event_time": "2020-08-07T07:52:09.839Z",
 				  "p_any_trace_ids": ["e527ab2a-d882-11ea-9f82-0a588c28e4c2"],
 				  "p_log_type": "%s"
-				}`, TypeTeleportAudit),
+				}`, gravitationallogs.TypeTeleportAudit),
 			},
 		},
 	} {
 		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
-			testutil.CheckRegisteredParser(t, tc.LogType, tc.Input, tc.Expect...)
+			testutil.CheckRegisteredParser(t, gravitationallogs.LogTypes(), tc.LogType, tc.Input, tc.Expect...)
 		})
 	}
 }

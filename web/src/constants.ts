@@ -18,7 +18,7 @@
 
 import { pantherConfig } from 'Source/config';
 import slackLogo from 'Assets/slack-minimal-logo.svg';
-import { DestinationTypeEnum } from 'Generated/schema';
+import { DestinationTypeEnum, SeverityEnum } from 'Generated/schema';
 import msTeamsLogo from 'Assets/ms-teams-minimal-logo.svg';
 import opsgenieLogo from 'Assets/opsgenie-minimal-logo.svg';
 import jiraLogo from 'Assets/jira-minimal-logo.svg';
@@ -28,6 +28,7 @@ import snsLogo from 'Assets/aws-sns-minimal-logo.svg';
 import sqsLogo from 'Assets/aws-sqs-minimal-logo.svg';
 import asanaLogo from 'Assets/asana-minimal-logo.svg';
 import customWebhook from 'Assets/custom-webhook-minimal-logo.svg';
+import { Theme } from 'pouncejs';
 
 export enum LogIntegrationsEnum {
   's3' = 'aws-s3',
@@ -95,47 +96,6 @@ export const RESOURCE_TYPES = [
   'AWS.S3.Bucket',
   'AWS.WAF.Regional.WebACL',
   'AWS.WAF.WebACL',
-] as const;
-
-export const LOG_TYPES = [
-  'Apache.AccessCombined',
-  'Apache.AccessCommon',
-  'AWS.ALB',
-  'AWS.AuroraMySQLAudit',
-  'AWS.CloudTrail',
-  'AWS.CloudTrailDigest',
-  'AWS.CloudTrailInsight',
-  'AWS.CloudWatchEvents',
-  'AWS.GuardDuty',
-  'AWS.S3ServerAccess',
-  'AWS.VPCFlow',
-  'Fluentd.Syslog3164',
-  'Fluentd.Syslog5424',
-  'GitLab.API',
-  'GitLab.Audit',
-  'GitLab.Exceptions',
-  'GitLab.Git',
-  'GitLab.Integrations',
-  'GitLab.Production',
-  'Juniper.Access',
-  'Juniper.Audit',
-  'Juniper.Firewall',
-  'Juniper.MWS',
-  'Juniper.Postgres',
-  'Juniper.Security',
-  'Nginx.Access',
-  'Osquery.Batch',
-  'Osquery.Differential',
-  'Osquery.Snapshot',
-  'Osquery.Status',
-  'OSSEC.EventInfo',
-  'Suricata.Anomaly',
-  'Suricata.DNS',
-  'Syslog.RFC3164',
-  'Syslog.RFC5424',
-  'Gravitational.TeleportAudit',
-  'Zeek.DNS',
-  'Lacework.Events',
 ] as const;
 
 const PANTHER_DOCS_BASE = 'https://docs.runpanther.io';
@@ -216,4 +176,12 @@ export const DESTINATIONS: Record<
     title: 'Custom Webhook',
     type: DestinationTypeEnum.Customwebhook,
   },
+};
+
+export const SEVERITY_COLOR_MAP: { [key in SeverityEnum]: keyof Theme['colors'] } = {
+  [SeverityEnum.Critical]: 'red-400' as const,
+  [SeverityEnum.High]: 'orange-500' as const,
+  [SeverityEnum.Medium]: 'yellow-500' as const,
+  [SeverityEnum.Low]: 'blue-300' as const,
+  [SeverityEnum.Info]: 'gray-300' as const,
 };

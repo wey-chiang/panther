@@ -24,38 +24,14 @@ import (
 	"github.com/panther-labs/panther/internal/log_analysis/awsglue"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/logtypes"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/apachelogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/awslogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/fluentdsyslogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/gitlablogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/gravitationallogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/juniperlogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/laceworklogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/nginxlogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/osquerylogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/osseclogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/suricatalogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/sysloglogs"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/zeeklogs"
 )
 
-var registeredLogTypes = logtypes.MustMerge("registered",
-	apachelogs.LogTypes(),
-	awslogs.LogTypes(),
-	fluentdsyslogs.LogTypes(),
-	gitlablogs.LogTypes(),
-	gravitationallogs.LogTypes(),
-	juniperlogs.LogTypes(),
-	laceworklogs.LogTypes(),
-	nginxlogs.LogTypes(),
-	osquerylogs.LogTypes(),
-	osseclogs.LogTypes(),
-	suricatalogs.LogTypes(),
-	sysloglogs.LogTypes(),
-	zeeklogs.LogTypes(),
+// Generate init() function for all log types defined under "internal/log_analysis/log_processor/parsers/..."
+//go:generate go run ./generate_init.go -f init.go ../parsers/...
+var (
+	registeredLogTypes logtypes.Group
+	availableLogTypes  = &logtypes.Registry{}
 )
-
-var availableLogTypes = logtypes.MustBuildRegistry("available", registeredLogTypes)
 
 // LogTypes exposes all available log types as a read-only group.
 func LogTypes() logtypes.Group {

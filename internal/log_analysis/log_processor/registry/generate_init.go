@@ -35,13 +35,14 @@ var opts = struct {
 	Filename: flag.String("f", "init.go", "Filename to write"),
 }
 
+// main scans packages for exported log types and generates a go file to initialize the registry log types
 func main() {
 	flag.Parse()
 	patterns := flag.Args()
 	if len(patterns) == 0 {
 		patterns = []string{"."}
 	}
-	packages, err := internal.DiscoverLogTypes(patterns...)
+	packages, err := internal.LoadExportedLogTypes(patterns...)
 	if err != nil {
 		log.Fatalf("failed to discover log types %v: %s", patterns, err)
 	}

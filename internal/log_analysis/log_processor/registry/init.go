@@ -21,6 +21,7 @@ package registry
 
 import (
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/logtypes"
+	// Packages that export log types
 	apachelogs "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/apachelogs"
 	awslogs "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/awslogs"
 	fluentdsyslogs "github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers/fluentdsyslogs"
@@ -38,6 +39,7 @@ import (
 )
 
 func init() {
+	// Initialize the registered log types group
 	registeredLogTypes = logtypes.MustMerge("registered",
 
 		apachelogs.LogTypes(),
@@ -68,5 +70,6 @@ func init() {
 
 		zeeklogs.LogTypes(),
 	)
+	// Register all log types in the group with the availableLogTypes
 	availableLogTypes.MustRegister(registeredLogTypes)
 }

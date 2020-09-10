@@ -26,8 +26,11 @@ import (
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/parsers"
 )
 
-// Generate init() function for all log types defined under "internal/log_analysis/log_processor/parsers/..."
-//go:generate go run ./generate_init.go -f init.go ../parsers/...
+// Generates an init() function that populates the registry with all log types exported by
+// packages inside "internal/log_analysis/log_processor/parsers/..."
+//go:generate go run ./generate_init.go ../parsers/...
+
+// These will be populated by the generated init() code
 var (
 	registeredLogTypes logtypes.Group
 	availableLogTypes  = &logtypes.Registry{}

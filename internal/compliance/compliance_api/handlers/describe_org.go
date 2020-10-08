@@ -21,34 +21,31 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"go.uber.org/zap"
 
-	"github.com/panther-labs/panther/api/gateway/compliance/models"
-	"github.com/panther-labs/panther/pkg/gatewayapi"
+	"github.com/panther-labs/panther/api/lambda/compliance/models"
 )
 
 // DescribeOrg returns pass/fail counts for every policy or resource in a customer account.
-func DescribeOrg(request *events.APIGatewayProxyRequest) *events.APIGatewayProxyResponse {
+func (API) DescribeOrg(input *models.DescribeOrgInput) *models.LambdaOutput {
 	queryInput, err := buildDescribeOrgScan()
 	if err != nil {
-		return &events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}
+		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
-	var result models.EntireOrg
-	if request.QueryStringParameters["type"] == "policy" {
+	var result models.DescribeOrgOutput
+	if input.Type == "policy" {
 		result.Policies, err = listPolicies(queryInput)
 	} else {
 		result.Resources, err = listResources(queryInput)
 	}
 	if err != nil {
-		return &events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}
+		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
-	return gatewayapi.MarshalResponse(&result, http.StatusOK)
+	return &models.LambdaOutput{Body: result, StatusCode: http.StatusOK}
 }
 
 func buildDescribeOrgScan() (*dynamodb.ScanInput, error) {
@@ -79,7 +76,7 @@ func buildDescribeOrgScan() (*dynamodb.ScanInput, error) {
 }
 
 // List policies, sort by top failing
-func listPolicies(input *dynamodb.ScanInput) ([]*models.ItemSummary, error) {
+func listPolicies(input *dynamodb.ScanInput) ([]models.ItemSummary, error) {
 	// Fetch all policies from Dynamo
 	policyMap, _, err := scanGroupByID(input, true, false)
 	if err != nil {
@@ -87,18 +84,18 @@ func listPolicies(input *dynamodb.ScanInput) ([]*models.ItemSummary, error) {
 	}
 
 	// Convert to a slice and sort by top failing
-	policySlice := make([]*models.PolicySummary, 0, len(policyMap))
+	policySlice := make([]models.PolicySummary, 0, len(policyMap))
 	for _, policy := range policyMap {
-		policySlice = append(policySlice, policy)
+		policySlice = append(policySlice, *policy)
 	}
 	sortPoliciesByTopFailing(policySlice)
 
 	// Convert to final ItemSummary
-	result := make([]*models.ItemSummary, len(policySlice))
+	result := make([]models.ItemSummary, len(policySlice))
 	for i, policy := range policySlice {
-		result[i] = &models.ItemSummary{
-			ID:     aws.String(string(policy.ID)),
-			Status: countToStatus(policy.Count),
+		result[i] = models.ItemSummary{
+			ID:     policy.ID,
+			Status: countToStatus(&policy.Count),
 		}
 	}
 
@@ -106,7 +103,7 @@ func listPolicies(input *dynamodb.ScanInput) ([]*models.ItemSummary, error) {
 }
 
 // List resources, sort by top failing
-func listResources(input *dynamodb.ScanInput) ([]*models.ItemSummary, error) {
+func listResources(input *dynamodb.ScanInput) ([]models.ItemSummary, error) {
 	// Fetch all resources from Dynamo
 	_, resourceMap, err := scanGroupByID(input, false, true)
 	if err != nil {
@@ -114,18 +111,18 @@ func listResources(input *dynamodb.ScanInput) ([]*models.ItemSummary, error) {
 	}
 
 	// Convert to a slice and sort by top failing
-	resourceSlice := make([]*models.ResourceSummary, 0, len(resourceMap))
+	resourceSlice := make([]models.ResourceSummary, 0, len(resourceMap))
 	for _, resource := range resourceMap {
-		resourceSlice = append(resourceSlice, resource)
+		resourceSlice = append(resourceSlice, *resource)
 	}
 	sortResourcesByTopFailing(resourceSlice)
 
 	// Convert to final ItemSummary
-	result := make([]*models.ItemSummary, len(resourceSlice))
+	result := make([]models.ItemSummary, len(resourceSlice))
 	for i, resource := range resourceSlice {
-		result[i] = &models.ItemSummary{
-			ID:     aws.String(string(resource.ID)),
-			Status: countBySeverityToStatus(resource.Count),
+		result[i] = models.ItemSummary{
+			ID:     resource.ID,
+			Status: countBySeverityToStatus(&resource.Count),
 		}
 	}
 

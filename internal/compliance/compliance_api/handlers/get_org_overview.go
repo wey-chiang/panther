@@ -19,59 +19,35 @@ package handlers
  */
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"go.uber.org/zap"
 
-	"github.com/panther-labs/panther/api/gateway/compliance/models"
-	"github.com/panther-labs/panther/pkg/gatewayapi"
+	"github.com/panther-labs/panther/api/lambda/compliance/models"
 )
 
-type getOrgOverviewParams struct {
-	LimitTopFailing int
-}
-
 // GetOrgOverview returns all the pass/fail information for the Panther overview dashboard.
-func GetOrgOverview(request *events.APIGatewayProxyRequest) *events.APIGatewayProxyResponse {
-	params, err := parseGetOrgOverview(request)
+func (API) GetOrgOverview(input *models.GetOrgOverviewInput) *models.LambdaOutput {
+	if input.LimitTopFailing == 0 {
+		input.LimitTopFailing = models.DefaultLimitTopFailing
+	}
+
+	queryInput, err := buildGetOrgOverviewQuery()
 	if err != nil {
-		return badRequest(err)
+		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
-	input, err := buildGetOrgOverviewQuery()
+	policies, resources, err := scanGroupByID(queryInput, true, true)
 	if err != nil {
-		return &events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}
+		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
-	policies, resources, err := scanGroupByID(input, true, true)
-	if err != nil {
-		return &events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}
+	return &models.LambdaOutput{
+		Body:       buildOverview(policies, resources, input.LimitTopFailing),
+		StatusCode: http.StatusOK,
 	}
-
-	return gatewayapi.MarshalResponse(
-		buildOverview(policies, resources, params.LimitTopFailing), http.StatusOK)
-}
-
-func parseGetOrgOverview(request *events.APIGatewayProxyRequest) (*getOrgOverviewParams, error) {
-	result := getOrgOverviewParams{
-		LimitTopFailing: defaultTopFailing,
-	}
-
-	var err error
-	rawTopFailing := request.QueryStringParameters["limitTopFailing"]
-	if rawTopFailing != "" {
-		result.LimitTopFailing, err = strconv.Atoi(rawTopFailing)
-		if err != nil {
-			return nil, errors.New("invalid limitTopFailing: " + err.Error())
-		}
-	}
-
-	return &result, nil
 }
 
 func buildGetOrgOverviewQuery() (*dynamodb.ScanInput, error) {
@@ -93,13 +69,13 @@ func buildGetOrgOverviewQuery() (*dynamodb.ScanInput, error) {
 
 func buildOverview(policies policyMap, resources resourceMap, limitTopFailing int) *models.OrgSummary {
 	// Count policies by severity and record failed policies
-	appliedPolicies := NewStatusCountBySeverity()
-	failedPolicies := make([]*models.PolicySummary, 0)
+	var appliedPolicies models.StatusCountBySeverity
+	failedPolicies := make([]models.PolicySummary, 0)
 	for _, policy := range policies {
-		status := countToStatus(policy.Count)
-		updateStatusCountBySeverity(appliedPolicies, policy.Severity, status)
-		if status != models.StatusPASS {
-			failedPolicies = append(failedPolicies, policy)
+		status := countToStatus(&policy.Count)
+		updateStatusCountBySeverity(&appliedPolicies, policy.Severity, status)
+		if status != models.StatusPass {
+			failedPolicies = append(failedPolicies, *policy)
 		}
 	}
 
@@ -110,28 +86,28 @@ func buildOverview(policies policyMap, resources resourceMap, limitTopFailing in
 	}
 
 	// Count resources by type and record failed resources
-	resourcesByType := make(map[models.ResourceType]*models.StatusCount, 100)
-	failedResources := make([]*models.ResourceSummary, 0, len(resources)/2)
+	resourcesByType := make(map[string]models.StatusCount, 100)
+	failedResources := make([]models.ResourceSummary, 0, len(resources)/2)
 	for _, resource := range resources {
 		count, ok := resourcesByType[resource.Type]
 		if !ok {
-			count = NewStatusCount()
+			count = models.StatusCount{}
 			resourcesByType[resource.Type] = count
 		}
 
-		status := countBySeverityToStatus(resource.Count)
-		updateStatusCount(count, status)
-		if status != models.StatusPASS {
-			failedResources = append(failedResources, resource)
+		status := countBySeverityToStatus(&resource.Count)
+		updateStatusCount(&count, status)
+		if status != models.StatusPass {
+			failedResources = append(failedResources, *resource)
 		}
 	}
 
 	// Convert resourcesByType into appropriate struct
-	scannedResources := &models.ScannedResources{
-		ByType: make([]*models.ResourceOfType, 0, len(resourcesByType)),
+	scannedResources := models.ScannedResources{
+		ByType: make([]models.ResourceOfType, 0, len(resourcesByType)),
 	}
 	for resourceType, count := range resourcesByType {
-		entry := &models.ResourceOfType{Count: count, Type: resourceType}
+		entry := models.ResourceOfType{Count: count, Type: resourceType}
 		scannedResources.ByType = append(scannedResources.ByType, entry)
 	}
 

@@ -19,8 +19,6 @@ package handlers
  */
 
 import (
-	"net/http"
-
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
@@ -32,9 +30,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/kelseyhightower/envconfig"
 
-	complianceapi "github.com/panther-labs/panther/api/gateway/compliance/client"
 	"github.com/panther-labs/panther/internal/core/analysis_api/analysis"
-	"github.com/panther-labs/panther/pkg/gatewayapi"
+)
+
+const (
+	complianceAPI = "panther-compliance-api"
 )
 
 var (
@@ -46,16 +46,12 @@ var (
 	sqsClient    sqsiface.SQSAPI
 	lambdaClient lambdaiface.LambdaAPI
 
-	httpClient       *http.Client
-	complianceClient *complianceapi.PantherComplianceAPI
-	policyEngine     analysis.PolicyEngine
-	ruleEngine       analysis.RuleEngine
+	policyEngine analysis.PolicyEngine
+	ruleEngine   analysis.RuleEngine
 )
 
 type envConfig struct {
 	Bucket               string `required:"true" split_words:"true"`
-	ComplianceAPIHost    string `required:"true" split_words:"true"`
-	ComplianceAPIPath    string `required:"true" split_words:"true"`
 	LayerManagerQueueURL string `required:"true" split_words:"true"`
 	RulesEngine          string `required:"true" split_words:"true"`
 	PolicyEngine         string `required:"true" split_words:"true"`
@@ -73,12 +69,6 @@ func Setup() {
 	s3Client = s3.New(awsSession)
 	sqsClient = sqs.New(awsSession)
 	lambdaClient = lambda.New(awsSession)
-
-	httpClient = gatewayapi.GatewayClient(awsSession)
-	complianceClient = complianceapi.NewHTTPClientWithConfig(
-		nil, complianceapi.DefaultTransportConfig().
-			WithBasePath("/"+env.ComplianceAPIPath).
-			WithHost(env.ComplianceAPIHost))
 
 	policyEngine = analysis.NewPolicyEngine(lambdaClient, env.PolicyEngine)
 	ruleEngine = analysis.NewRuleEngine(lambdaClient, env.RulesEngine)

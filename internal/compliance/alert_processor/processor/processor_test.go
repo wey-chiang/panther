@@ -27,13 +27,13 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	analysismodels "github.com/panther-labs/panther/api/gateway/analysis/models"
-	compliancemodels "github.com/panther-labs/panther/api/gateway/compliance/models"
+	compliancemodels "github.com/panther-labs/panther/api/lambda/compliance/models"
 	"github.com/panther-labs/panther/internal/compliance/alert_processor/models"
+	"github.com/panther-labs/panther/pkg/gatewayapi"
 	"github.com/panther-labs/panther/pkg/testutils"
 )
 
@@ -47,9 +47,33 @@ func (m *mockRoundTripper) RoundTrip(request *http.Request) (*http.Response, err
 	return args.Get(0).(*http.Response), args.Error(1)
 }
 
+type mockCompliance struct {
+	gatewayapi.API
+	mock.Mock
+}
+
+func (m *mockCompliance) Invoke(input, output interface{}) (int, error) {
+	args := m.Called(input, output)
+
+	// The third "return value" of the mock is used to set the output
+	body, err := jsoniter.Marshal(args.Get(2))
+	if err != nil {
+		panic(err)
+	}
+	if err := jsoniter.Unmarshal(body, output); err != nil {
+		panic(err)
+	}
+
+	return args.Int(0), args.Error(1)
+}
+
 func TestHandleEventWithAlert(t *testing.T) {
 	mockDdbClient := &testutils.DynamoDBMock{}
 	ddbClient = mockDdbClient
+
+	mockComplianceClient := &mockCompliance{}
+	complianceClient = mockComplianceClient
+
 	mockRoundTripper := &mockRoundTripper{}
 	httpClient = &http.Client{Transport: mockRoundTripper}
 
@@ -61,13 +85,13 @@ func TestHandleEventWithAlert(t *testing.T) {
 		Timestamp:       time.Now(),
 	}
 
-	complianceResponse := &compliancemodels.ComplianceStatus{
-		LastUpdated:    compliancemodels.LastUpdated(time.Now()),
+	complianceResponse := &compliancemodels.ComplianceEntry{
+		LastUpdated:    time.Now(),
 		PolicyID:       "test-policy",
 		PolicySeverity: "INFO",
 		ResourceID:     "test-resource",
 		ResourceType:   "AWS.S3.Test",
-		Status:         compliancemodels.StatusFAIL,
+		Status:         compliancemodels.StatusFail,
 		Suppressed:     false,
 	}
 
@@ -76,7 +100,12 @@ func TestHandleEventWithAlert(t *testing.T) {
 	}
 
 	// mock call to compliance-api
-	mockRoundTripper.On("RoundTrip", mock.Anything).Return(generateResponse(complianceResponse, http.StatusOK), nil).Once()
+	complianceInput := &compliancemodels.LambdaInput{
+		GetStatus: &compliancemodels.GetStatusInput{PolicyID: "test-policy", ResourceID: "test-resource"},
+	}
+	mockComplianceClient.On("Invoke", complianceInput, mock.Anything).Return(
+		http.StatusOK, nil, complianceResponse)
+
 	// mock call to analysis-api
 	mockRoundTripper.On("RoundTrip", mock.Anything).Return(generateResponse(policyResponse, http.StatusOK), nil).Once()
 	// mock call to remediate-api
@@ -85,10 +114,7 @@ func TestHandleEventWithAlert(t *testing.T) {
 
 	require.NoError(t, Handle(input))
 
-	// Verifying request to fetch compliance information
-	httpRequest := mockRoundTripper.Calls[0].Arguments[0].(*http.Request)
-	assert.Equal(t, "policyId=test-policy&resourceId=test-resource", httpRequest.URL.RawQuery)
-
+	mockComplianceClient.AssertExpectations(t)
 	mockDdbClient.AssertExpectations(t)
 	mockRoundTripper.AssertExpectations(t)
 }
@@ -107,13 +133,13 @@ func TestHandleEventWithAlertButNoAutoRemediationID(t *testing.T) {
 		Timestamp:       time.Now(),
 	}
 
-	complianceResponse := &compliancemodels.ComplianceStatus{
-		LastUpdated:    compliancemodels.LastUpdated(time.Now()),
+	complianceResponse := &compliancemodels.ComplianceEntry{
+		LastUpdated:    time.Now(),
 		PolicyID:       "test-policy",
 		PolicySeverity: "INFO",
 		ResourceID:     "test-resource",
 		ResourceType:   "AWS.S3.Test",
-		Status:         compliancemodels.StatusFAIL,
+		Status:         compliancemodels.StatusFail,
 		Suppressed:     false,
 	}
 
@@ -150,13 +176,13 @@ func TestHandleEventWithoutAlert(t *testing.T) {
 		ShouldAlert:     false,
 	}
 
-	complianceResponse := &compliancemodels.ComplianceStatus{
-		LastUpdated:    compliancemodels.LastUpdated(time.Now()),
+	complianceResponse := &compliancemodels.ComplianceEntry{
+		LastUpdated:    time.Now(),
 		PolicyID:       "test-policy",
 		PolicySeverity: "INFO",
 		ResourceID:     "test-resource",
 		ResourceType:   "AWS.S3.Test",
-		Status:         compliancemodels.StatusFAIL,
+		Status:         compliancemodels.StatusFail,
 		Suppressed:     false,
 	}
 
@@ -186,13 +212,13 @@ func TestSkipActionsIfResourceIsNotFailing(t *testing.T) {
 		ShouldAlert:     true,
 	}
 
-	responseBody := &compliancemodels.ComplianceStatus{
-		LastUpdated:    compliancemodels.LastUpdated(time.Now()),
+	responseBody := &compliancemodels.ComplianceEntry{
+		LastUpdated:    time.Now(),
 		PolicyID:       "test-policy",
 		PolicySeverity: "INFO",
 		ResourceID:     "test-resource",
 		ResourceType:   "AWS.S3.Test",
-		Status:         compliancemodels.StatusPASS,
+		Status:         compliancemodels.StatusPass,
 		Suppressed:     false,
 	}
 

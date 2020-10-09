@@ -23,12 +23,33 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
+
+type API interface {
+	Invoke(input, output interface{}) (int, error)
+}
+
+type Client struct {
+	lambda       lambdaiface.LambdaAPI
+	functionName string
+	json         jsoniter.API
+}
+
+// Create a new client for invoking a lambda gateway API proxy directly.
+func NewClient(lambda lambdaiface.LambdaAPI, functionName string, json jsoniter.API) *Client {
+	if json == nil {
+		json = jsoniter.ConfigDefault
+	}
+	return &Client{
+		lambda:       lambda,
+		functionName: functionName,
+		json:         json,
+	}
+}
 
 // Invoke a former API gateway proxy Lambda directly.
 //
@@ -40,44 +61,44 @@ import (
 //     - status code is not 2XX
 //
 // This is similar to genericapi.Invoke and will be obsolete once we consolidate the internal API.
-func InvokeLambda(client lambdaiface.LambdaAPI, function string, input, output interface{}) (int, error) {
-	payload, err := jsoniter.Marshal(input)
+func (client *Client) Invoke(input, output interface{}) (int, error) {
+	payload, err := client.json.Marshal(input)
 	if err != nil {
-		return http.StatusBadRequest, fmt.Errorf("%s: jsoniter.Marshal(input) failed: %s", function, err)
+		return http.StatusBadRequest, fmt.Errorf("%s: jsoniter.Marshal(input) failed: %s", client.functionName, err)
 	}
 
 	zap.L().Debug(
 		"invoking gateway Lambda function",
-		zap.String("name", function), zap.Int("bytes", len(payload)))
-	response, err := client.Invoke(
-		&lambda.InvokeInput{FunctionName: aws.String(function), Payload: payload})
+		zap.String("name", client.functionName), zap.Int("bytes", len(payload)))
+	response, err := client.lambda.Invoke(
+		&lambda.InvokeInput{FunctionName: &client.functionName, Payload: payload})
 
 	// Invocation failed - permission error, function doesn't exist, etc
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("%s: lambda.Invoke() failed: %s", function, err)
+		return http.StatusInternalServerError, fmt.Errorf("%s: lambda.Invoke() failed: %s", client.functionName, err)
 	}
 
 	// The Lambda function returned an error.
 	// For gateway handlers, this should only happen for a runtime exception: out of memory, timeout, panic, etc
 	if response.FunctionError != nil {
-		return http.StatusInternalServerError, fmt.Errorf("%s: execution failed: %s", function, response.Payload)
+		return http.StatusInternalServerError, fmt.Errorf("%s: execution failed: %s", client.functionName, response.Payload)
 	}
 
 	// All gateway proxies had to return this type for API gateway.
 	var result events.APIGatewayProxyResponse
-	if err := jsoniter.Unmarshal(response.Payload, &result); err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("%s: proxy response could not be parsed: %s", function, response)
+	if err := client.json.Unmarshal(response.Payload, &result); err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("%s: proxy response could not be parsed: %s", client.functionName, response)
 	}
 
 	if result.StatusCode < 200 || result.StatusCode >= 300 {
 		return result.StatusCode, fmt.Errorf("%s: unsuccessful status code %d: %s",
-			function, result.StatusCode, result.Body)
+			client.functionName, result.StatusCode, result.Body)
 	}
 
 	if output != nil {
-		if err := jsoniter.UnmarshalFromString(result.Body, output); err != nil {
+		if err := client.json.UnmarshalFromString(result.Body, output); err != nil {
 			return http.StatusInternalServerError, fmt.Errorf("%s: response could not be parsed into output variable: %s",
-				function, err)
+				client.functionName, err)
 		}
 	}
 

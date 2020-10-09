@@ -1309,7 +1309,7 @@ Resources:
         #if($statusCode >= 200 && $statusCode < 300)
             $ctx.result.body
         #else
-            $util.error($ctx.result.errorMessage, "$statusCode", $input)
+            $util.error($ctx.result.body, "$statusCode", $input)
         #end
 
   LogAnalysisMetricsResolver:
@@ -1363,7 +1363,7 @@ Resources:
         #if($statusCode >= 200 && $statusCode < 300)
             $ctx.result.body
         #else
-            $util.error($ctx.result.errorMessage, "$statusCode", $input)
+            $util.error($ctx.result.body, "$statusCode", $input)
         #end
 
   PoliciesForResourceResolver:
@@ -1386,7 +1386,7 @@ Resources:
         #if($statusCode >= 200 && $statusCode < 300)
             $ctx.result.body
         #else
-            $util.error($ctx.result.errorMessage, "$statusCode", $input)
+            $util.error($ctx.result.body, "$statusCode", $input)
         #end
 
   SuppressPoliciesResolver:

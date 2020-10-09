@@ -34,22 +34,6 @@ var severityPriority = map[models.PolicySeverity]int{
 	models.SeverityCritical: 4,
 }
 
-// Convert a validation error into a 400 proxy response.
-// TODO - remove
-//func badRequest(err error) *events.APIGatewayProxyResponse {
-//	errModel := &models.Error{Message: aws.String(err.Error())}
-//	return gatewayapi.MarshalResponse(errModel, http.StatusBadRequest)
-//}
-//
-//// NewStatusCount creates a new pass/fail counter with values initialized to 0
-//func NewStatusCount() *models.StatusCount {
-//	return &models.StatusCount{
-//		Error: aws.Int64(0),
-//		Fail:  aws.Int64(0),
-//		Pass:  aws.Int64(0),
-//	}
-//}
-
 // Update status counters based on the string status
 func updateStatusCount(count *models.StatusCount, status models.ComplianceStatus) {
 	switch status {
@@ -74,17 +58,6 @@ func countToStatus(count *models.StatusCount) models.ComplianceStatus {
 	}
 	return models.StatusPass
 }
-
-//// NewStatusCountBySeverity creates a new pass/fail counter keyed by severity with initial values
-//func NewStatusCountBySeverity() *models.StatusCountBySeverity {
-//	return &models.StatusCountBySeverity{
-//		Info:     NewStatusCount(),
-//		Low:      NewStatusCount(),
-//		Medium:   NewStatusCount(),
-//		High:     NewStatusCount(),
-//		Critical: NewStatusCount(),
-//	}
-//}
 
 // Update StatsCountBySeverity totals with a pass/fail status of a given severity
 func updateStatusCountBySeverity(

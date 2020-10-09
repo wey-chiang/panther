@@ -19,8 +19,10 @@ package handlers
  */
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
@@ -31,7 +33,7 @@ import (
 )
 
 // DeleteStatus deletes a batch of items
-func (API) DeleteStatus(input *models.DeleteStatusInput) *models.LambdaOutput {
+func (API) DeleteStatus(input *models.DeleteStatusInput) *events.APIGatewayProxyResponse {
 	var deleteRequests []*dynamodb.WriteRequest
 	for _, entry := range input.Entries {
 		var entryRequests []*dynamodb.WriteRequest
@@ -43,7 +45,8 @@ func (API) DeleteStatus(input *models.DeleteStatusInput) *models.LambdaOutput {
 		}
 
 		if err != nil {
-			return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+			zap.L().Error("DeleteStatus failed", zap.Error(err))
+			return &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 		deleteRequests = append(deleteRequests, entryRequests...)
 	}
@@ -54,11 +57,12 @@ func (API) DeleteStatus(input *models.DeleteStatusInput) *models.LambdaOutput {
 
 	zap.L().Info("deleting batch of items", zap.Int("itemCount", len(deleteRequests)))
 	if err := dynamodbbatch.BatchWriteItem(dynamoClient, maxWriteBackoff, batchInput); err != nil {
-		zap.L().Error("dynamodbbatch.BatchWriteItem failed", zap.Error(err))
-		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+		err = fmt.Errorf("dynamodbbatch.BatchWriteItem failed: %s", err)
+		zap.L().Error("DeleteStatus failed", zap.Error(err))
+		return &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
-	return &models.LambdaOutput{StatusCode: http.StatusOK}
+	return &events.APIGatewayProxyResponse{StatusCode: http.StatusOK}
 }
 
 // Query the table for entries with the given policyID and return the list of delete requests.
@@ -86,8 +90,7 @@ func policyDeleteEntries(policyID string, resourceTypes []string) ([]*dynamodb.W
 
 	expr, err := builder.Build()
 	if err != nil {
-		zap.L().Error("expression.Build failed", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("dynamo expression.Build failed: %s", err)
 	}
 
 	// NOTE: You can't do a consistent read on a global index
@@ -123,8 +126,7 @@ func resourceDeleteEntries(resourceID string) ([]*dynamodb.WriteRequest, error) 
 
 	expr, err := expression.NewBuilder().WithKeyCondition(keyCondition).WithProjection(projection).Build()
 	if err != nil {
-		zap.L().Error("expression.Build failed", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("dynamo expression.Build failed: %s", err)
 	}
 
 	input := &dynamodb.QueryInput{

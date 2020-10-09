@@ -19,6 +19,8 @@ package handlers
  */
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
@@ -81,8 +83,7 @@ func scanPages(input *dynamodb.ScanInput, handler func(*models.ComplianceEntry) 
 		return innerErr
 	}
 	if err != nil {
-		zap.L().Error("dynamoClient.ScanPages failed", zap.Error(err))
-		return err
+		return fmt.Errorf("dynamoClient.ScanPages failed: %s", err)
 	}
 
 	return nil

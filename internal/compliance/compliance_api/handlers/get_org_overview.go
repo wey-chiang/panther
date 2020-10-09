@@ -19,35 +19,37 @@ package handlers
  */
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"go.uber.org/zap"
 
 	"github.com/panther-labs/panther/api/lambda/compliance/models"
+	"github.com/panther-labs/panther/pkg/gatewayapi"
 )
 
 // GetOrgOverview returns all the pass/fail information for the Panther overview dashboard.
-func (API) GetOrgOverview(input *models.GetOrgOverviewInput) *models.LambdaOutput {
+func (API) GetOrgOverview(input *models.GetOrgOverviewInput) *events.APIGatewayProxyResponse {
 	if input.LimitTopFailing == 0 {
 		input.LimitTopFailing = models.DefaultLimitTopFailing
 	}
 
 	queryInput, err := buildGetOrgOverviewQuery()
 	if err != nil {
-		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+		zap.L().Error("GetOrgOverview failed", zap.Error(err))
+		return &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
 	policies, resources, err := scanGroupByID(queryInput, true, true)
 	if err != nil {
-		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+		zap.L().Error("GetOrgOverview failed", zap.Error(err))
+		return &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
-	return &models.LambdaOutput{
-		Body:       buildOverview(policies, resources, input.LimitTopFailing),
-		StatusCode: http.StatusOK,
-	}
+	return gatewayapi.MarshalResponse(buildOverview(policies, resources, input.LimitTopFailing), http.StatusOK)
 }
 
 func buildGetOrgOverviewQuery() (*dynamodb.ScanInput, error) {
@@ -55,8 +57,7 @@ func buildGetOrgOverviewQuery() (*dynamodb.ScanInput, error) {
 
 	expr, err := expression.NewBuilder().WithFilter(filter).Build()
 	if err != nil {
-		zap.L().Error("expression.Build failed", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("expression.Build failed: %s", err)
 	}
 
 	return &dynamodb.ScanInput{

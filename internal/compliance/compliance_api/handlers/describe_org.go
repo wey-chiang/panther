@@ -19,20 +19,24 @@ package handlers
  */
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"go.uber.org/zap"
 
 	"github.com/panther-labs/panther/api/lambda/compliance/models"
+	"github.com/panther-labs/panther/pkg/gatewayapi"
 )
 
 // DescribeOrg returns pass/fail counts for every policy or resource in a customer account.
-func (API) DescribeOrg(input *models.DescribeOrgInput) *models.LambdaOutput {
+func (API) DescribeOrg(input *models.DescribeOrgInput) *events.APIGatewayProxyResponse {
 	queryInput, err := buildDescribeOrgScan()
 	if err != nil {
-		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+		zap.L().Error("DescribeOrg failed", zap.Error(err))
+		return &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
 	var result models.DescribeOrgOutput
@@ -42,10 +46,11 @@ func (API) DescribeOrg(input *models.DescribeOrgInput) *models.LambdaOutput {
 		result.Resources, err = listResources(queryInput)
 	}
 	if err != nil {
-		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+		zap.L().Error("DescribeOrg failed", zap.Error(err))
+		return &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
-	return &models.LambdaOutput{Body: result, StatusCode: http.StatusOK}
+	return gatewayapi.MarshalResponse(&result, http.StatusOK)
 }
 
 func buildDescribeOrgScan() (*dynamodb.ScanInput, error) {
@@ -62,8 +67,7 @@ func buildDescribeOrgScan() (*dynamodb.ScanInput, error) {
 		WithProjection(projection).
 		Build()
 	if err != nil {
-		zap.L().Error("expression.Build failed", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("dynamo expression.Build failed: %s", err)
 	}
 
 	return &dynamodb.ScanInput{

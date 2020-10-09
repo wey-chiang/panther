@@ -57,14 +57,6 @@ type LambdaInput struct {
 	UpdateMetadata *UpdateMetadataInput `json:"updateMetadata"`
 }
 
-// Migrated from APIGatewayProxyResponse
-type LambdaOutput struct {
-	// TODO - consider just using body for the error message
-	Body         interface{} `json:"body"`
-	ErrorMessage string      `json:"errorMessage"`
-	StatusCode   int         `json:"statusCode"`
-}
-
 // List pass/fail status for every policy or resource in the org
 // TODO - handle responses > 6MB
 //

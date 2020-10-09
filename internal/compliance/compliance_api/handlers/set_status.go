@@ -19,9 +19,11 @@ package handlers
  */
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"go.uber.org/zap"
@@ -41,7 +43,7 @@ const (
 )
 
 // SetStatus batch writes a set of compliance status to the Dynamo table.
-func (API) SetStatus(input *models.SetStatusInput) *models.LambdaOutput {
+func (API) SetStatus(input *models.SetStatusInput) *events.APIGatewayProxyResponse {
 	now := time.Now()
 	expiresAt := now.Add(statusLifetime).Unix()
 	writeRequests := make([]*dynamodb.WriteRequest, len(input.Entries))
@@ -61,8 +63,9 @@ func (API) SetStatus(input *models.SetStatusInput) *models.LambdaOutput {
 
 		marshaled, err := dynamodbattribute.MarshalMap(newEntry)
 		if err != nil {
-			zap.L().Error("dynamodbattribute.MarshalMap failed", zap.Error(err))
-			return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+			err = fmt.Errorf("dynamodbattribute.MarshalMap failed: %s", err)
+			zap.L().Error("SetStatus failed", zap.Error(err))
+			return &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
 		writeRequests[i] = &dynamodb.WriteRequest{PutRequest: &dynamodb.PutRequest{Item: marshaled}}
@@ -73,9 +76,10 @@ func (API) SetStatus(input *models.SetStatusInput) *models.LambdaOutput {
 	}
 
 	if err := dynamodbbatch.BatchWriteItem(dynamoClient, maxWriteBackoff, batchInput); err != nil {
-		zap.L().Error("dynamodbbatch.BatchWriteItem failed", zap.Error(err))
-		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+		err = fmt.Errorf("dynamodbbatch.BatchWriteItem failed: %s", err)
+		zap.L().Error("SetStatus failed", zap.Error(err))
+		return &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
-	return &models.LambdaOutput{StatusCode: http.StatusCreated}
+	return &events.APIGatewayProxyResponse{StatusCode: http.StatusCreated}
 }

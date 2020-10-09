@@ -19,9 +19,11 @@ package handlers
  */
 
 import (
+	"fmt"
 	"net/http"
 	"path"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"go.uber.org/zap"
@@ -31,7 +33,7 @@ import (
 )
 
 // UpdateMetadata updates status entries for a given policy with a new severity / suppression set.
-func (API) UpdateMetadata(input *models.UpdateMetadataInput) *models.LambdaOutput {
+func (API) UpdateMetadata(input *models.UpdateMetadataInput) *events.APIGatewayProxyResponse {
 	writes, errResponse := itemsToUpdate(input)
 	if errResponse != nil {
 		return errResponse
@@ -39,7 +41,7 @@ func (API) UpdateMetadata(input *models.UpdateMetadataInput) *models.LambdaOutpu
 
 	if len(writes) == 0 {
 		// nothing to update
-		return &models.LambdaOutput{StatusCode: http.StatusOK}
+		return &events.APIGatewayProxyResponse{StatusCode: http.StatusOK}
 	}
 
 	// It's faster to do a batch write with all of the updated entries instead of issuing
@@ -49,17 +51,19 @@ func (API) UpdateMetadata(input *models.UpdateMetadataInput) *models.LambdaOutpu
 	}
 
 	if err := dynamodbbatch.BatchWriteItem(dynamoClient, maxWriteBackoff, batchInput); err != nil {
-		zap.L().Error("dynamodbbatch.BatchWriteItem failed", zap.Error(err))
-		return &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+		err = fmt.Errorf("dynamodbbatch.BatchWriteItem failed: %s", err)
+		zap.L().Error("UpdateMetadata failed", zap.Error(err))
+		return &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
-	return &models.LambdaOutput{StatusCode: http.StatusOK}
+	return &events.APIGatewayProxyResponse{StatusCode: http.StatusOK}
 }
 
-func itemsToUpdate(input *models.UpdateMetadataInput) ([]*dynamodb.WriteRequest, *models.LambdaOutput) {
+func itemsToUpdate(input *models.UpdateMetadataInput) ([]*dynamodb.WriteRequest, *events.APIGatewayProxyResponse) {
 	query, err := buildDescribePolicyQuery(input.PolicyID)
 	if err != nil {
-		return nil, &models.LambdaOutput{ErrorMessage: err.Error(), StatusCode: http.StatusInternalServerError}
+		zap.L().Error("UpdateMetadata failed", zap.Error(err))
+		return nil, &events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusInternalServerError}
 	}
 
 	zap.L().Debug("querying items to update", zap.String("policyId", input.PolicyID))
@@ -90,14 +94,16 @@ func itemsToUpdate(input *models.UpdateMetadataInput) ([]*dynamodb.WriteRequest,
 
 	if err != nil {
 		if err == path.ErrBadPattern {
-			return nil, &models.LambdaOutput{
-				ErrorMessage: "invalid suppression pattern: " + err.Error(),
-				StatusCode:   http.StatusBadRequest,
+			return nil, &events.APIGatewayProxyResponse{
+				Body:       "invalid suppression pattern: " + err.Error(),
+				StatusCode: http.StatusBadRequest,
 			}
 		}
-		return nil, &models.LambdaOutput{
-			ErrorMessage: err.Error(),
-			StatusCode:   http.StatusInternalServerError,
+
+		zap.L().Error("UpdateMetadata failed", zap.Error(err))
+		return nil, &events.APIGatewayProxyResponse{
+			Body:       err.Error(),
+			StatusCode: http.StatusInternalServerError,
 		}
 	}
 

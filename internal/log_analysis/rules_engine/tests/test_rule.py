@@ -56,7 +56,8 @@ class TestRule(TestCase):  # pylint: disable=too-many-public-methods
 
     def test_rule_tags(self) -> None:
         rule_body = 'def rule(event):\n\treturn True'
-        rule = Rule({'id': 'test_rule_default_dedup_time', 'body': rule_body, 'versionId': 'versionId', 'tags': ['tag2', 'tag1']})
+        rule = Rule({'id': 'test_rule_default_dedup_time', 'body': rule_body, 'versionId': 'versionId',
+                     'tags': ['tag2', 'tag1']})
 
         self.assertEqual(['tag1', 'tag2'], rule.rule_tags)
 
@@ -127,7 +128,8 @@ class TestRule(TestCase):  # pylint: disable=too-many-public-methods
         rule = Rule({'id': 'test_restrict_title_size', 'body': rule_body, 'versionId': 'versionId'})
 
         expected_title_string_prefix = ''.join('a' for _ in range(MAX_TITLE_SIZE - len(TRUNCATED_STRING_SUFFIX)))
-        expected_rule = RuleResult(matched=True, dedup_output='test', title_output=expected_title_string_prefix + TRUNCATED_STRING_SUFFIX)
+        expected_rule = RuleResult(matched=True, dedup_output='test',
+                                   title_output=expected_title_string_prefix + TRUNCATED_STRING_SUFFIX)
         self.assertEqual(expected_rule, rule.run({}))
 
     def test_empty_dedup_result_to_default(self) -> None:
@@ -160,6 +162,16 @@ class TestRule(TestCase):  # pylint: disable=too-many-public-methods
         expected_rule = RuleResult(matched=True, dedup_output='defaultDedupString:test_dedup_throws_exception')
         self.assertEqual(expected_rule, rule.run({}))
 
+    def test_dedup_exception_batch_mode(self):
+        rule_body = 'def rule(event):\n\treturn True\ndef dedup(event):\n\traise Exception("test")'
+        rule = Rule({'id': 'test_dedup_throws_exception', 'body': rule_body, 'versionId': 'versionId'})
+
+        actual = rule.run({}, batch_mode=False)
+
+        self.assertTrue(actual.matched)
+        self.assertIsNotNone(actual.dedup_exception)
+        self.assertTrue(actual.errored)
+
     def test_rule_invalid_dedup_return(self) -> None:
         rule_body = 'def rule(event):\n\treturn True\ndef dedup(event):\n\treturn {}'
         rule = Rule({'id': 'test_rule_invalid_dedup_return', 'body': rule_body, 'versionId': 'versionId'})
@@ -171,7 +183,8 @@ class TestRule(TestCase):  # pylint: disable=too-many-public-methods
         rule_body = 'def rule(event):\n\treturn True\ndef dedup(event):\n\treturn ""'
         rule = Rule({'id': 'test_rule_dedup_returns_empty_string', 'body': rule_body, 'versionId': 'versionId'})
 
-        expected_result = RuleResult(matched=True, dedup_output='defaultDedupString:test_rule_dedup_returns_empty_string')
+        expected_result = RuleResult(matched=True,
+                                     dedup_output='defaultDedupString:test_rule_dedup_returns_empty_string')
         self.assertEqual(rule.run({}), expected_result)
 
     def test_rule_matches_with_title_without_dedup(self) -> None:
@@ -199,5 +212,7 @@ class TestRule(TestCase):  # pylint: disable=too-many-public-methods
         rule_body = 'def rule(event):\n\treturn True\ndef title(event):\n\treturn ""'
         rule = Rule({'id': 'test_rule_title_returns_empty_string', 'body': rule_body, 'versionId': 'versionId'})
 
-        expected_result = RuleResult(matched=True, dedup_output='defaultDedupString:test_rule_title_returns_empty_string', title_output='')
+        expected_result = RuleResult(matched=True,
+                                     dedup_output='defaultDedupString:test_rule_title_returns_empty_string',
+                                     title_output='')
         self.assertEqual(expected_result, rule.run({}))

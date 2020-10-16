@@ -52,6 +52,6 @@ func process(lc *lambdacontext.LambdaContext, deadline time.Time, event events.S
 		operation.Stop().Log(err, zap.Int("sqsMessageCount", sqsMessageCount))
 	}()
 
-	sqsMessageCount, err = processor.StreamEvents(common.SqsClient, deadline, event)
+	sqsMessageCount, err = processor.StreamEvents(common.SqsClient, common.LambdaClient, deadline)
 	return err
 }

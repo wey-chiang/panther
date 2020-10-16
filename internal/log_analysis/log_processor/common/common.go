@@ -45,11 +45,13 @@ const (
 
 var (
 	// Session and clients that can be used by components of the log processor
+	// FIXME: these should be removed as globals
 	Session      *session.Session
 	LambdaClient lambdaiface.LambdaAPI
 	S3Uploader   s3manageriface.UploaderAPI
 	SqsClient    sqsiface.SQSAPI
 	SnsClient    snsiface.SNSAPI
+	lambdaClient lambdaiface.LambdaAPI
 
 	Config EnvConfig
 
@@ -72,6 +74,7 @@ func Setup() {
 	S3Uploader = s3manager.NewUploader(Session)
 	SqsClient = sqs.New(Session)
 	SnsClient = sns.New(Session)
+	LambdaClient = lambda.New(Session)
 
 	err := envconfig.Process("", &Config)
 	if err != nil {

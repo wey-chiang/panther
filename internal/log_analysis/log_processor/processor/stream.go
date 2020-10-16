@@ -23,8 +23,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/pkg/errors"
@@ -35,9 +36,13 @@ import (
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/registry"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/sources"
 	"github.com/panther-labs/panther/pkg/awsbatch/sqsbatch"
+	"github.com/panther-labs/panther/pkg/awsutils"
+	"github.com/panther-labs/panther/pkg/box"
 )
 
 const (
+	processingRescaleLambdaFactor = 1000 // spawn 1 lambda per this many events
+
 	processingMaxFilesLimit   = 5000 // limit this so there is time to delete from the queue at the end
 	processingTimeLimitScalar = 0.5  // the processing runtime should be shorter than lambda timeout to make room to flush buffers
 
@@ -50,17 +55,17 @@ The function will attempt to read more messages from the queue when the queue ha
 the lambda will continue to read events and maximally aggregate data to produce fewer, bigger files.
 Fewer, bigger files makes Athena queries much faster.
 */
-func StreamEvents(sqsClient sqsiface.SQSAPI, deadlineTime time.Time, event events.SQSEvent) (sqsMessageCount int, err error) {
-	return streamEvents(sqsClient, deadlineTime, event, Process, sources.ReadSnsMessages)
+func StreamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI, deadlineTime time.Time) (sqsMessageCount int, err error) {
+	return streamEvents(sqsClient, lambdaClient, deadlineTime, Process, sources.ReadSnsMessages)
 }
 
 // entry point for unit testing, pass in read/process functions
-func streamEvents(sqsClient sqsiface.SQSAPI, deadlineTime time.Time, event events.SQSEvent,
+func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI, deadlineTime time.Time,
 	processFunc func(chan *common.DataStream, destinations.Destination) error,
 	generateDataStreamsFunc func([]string) ([]*common.DataStream, error)) (int, error) {
 
 	// these cannot be named return vars because it would cause a data race
-	var sqsMessageCount int
+	var sqsMessageCount, totalQueuedMessages int
 	var err error
 
 	streamChan := make(chan *common.DataStream, 2*sqsMaxBatchSize) // use small buffer to pipeline events
@@ -74,19 +79,6 @@ func streamEvents(sqsClient sqsiface.SQSAPI, deadlineTime time.Time, event event
 			close(streamChan)         // done reading messages, this will cause processFunc() to return
 			close(readEventErrorChan) // no more writes on err chan
 		}()
-
-		// extract first set of messages from the lambda call, lambda handles delete of these
-		dataStreams, err := lambdaDataStreams(event, generateDataStreamsFunc)
-		if err != nil {
-			readEventErrorChan <- err
-			return
-		}
-
-		// process lambda events
-		sqsMessageCount += len(dataStreams)
-		for _, dataStream := range dataStreams {
-			streamChan <- dataStream
-		}
 
 		// continue to read until either there are no sqs messages or we have exceeded the processing time/file limit
 		highMemoryCounter := 0
@@ -104,8 +96,8 @@ func streamEvents(sqsClient sqsiface.SQSAPI, deadlineTime time.Time, event event
 				continue
 			}
 
-			// under low load we do not read from the sqs queue and just exit
-			totalQueuedMessages, err := queueDepth(sqsClient) // this includes queued and delayed messages
+			// under no load we do not read from the sqs queue and just exit
+			totalQueuedMessages, err = queueDepth(sqsClient) // this includes queued and delayed messages
 			if err != nil {
 				readEventErrorChan <- err
 				return
@@ -122,7 +114,7 @@ func streamEvents(sqsClient sqsiface.SQSAPI, deadlineTime time.Time, event event
 				return
 			}
 
-			if len(messages) == 0 { // no work OR reached the max sqs messages allowed in flight, either way need to break
+			if len(messages) == 0 { // no work to do but maybe more later OR reached the max sqs messages allowed in flight, either way break
 				break
 			}
 
@@ -130,7 +122,7 @@ func streamEvents(sqsClient sqsiface.SQSAPI, deadlineTime time.Time, event event
 			accumulatedMessageReceipts = append(accumulatedMessageReceipts, messageReceipts...)
 
 			// extract from sqs read responses
-			dataStreams, err = sqsDataStreams(messages, generateDataStreamsFunc)
+			dataStreams, err := sqsDataStreams(messages, generateDataStreamsFunc)
 			if err != nil {
 				readEventErrorChan <- err
 				return
@@ -141,7 +133,10 @@ func streamEvents(sqsClient sqsiface.SQSAPI, deadlineTime time.Time, event event
 			for _, dataStream := range dataStreams {
 				streamChan <- dataStream
 			}
-		}
+		} // end processing events
+
+		// finished processing, did we stop with events in the q? if so and there are many more, then we need to scaleUp
+		processingScaleUp(lambdaClient, totalQueuedMessages/processingRescaleLambdaFactor)
 	}()
 
 	// Use a properly configured JSON API for Athena quirks
@@ -162,14 +157,30 @@ func streamEvents(sqsClient sqsiface.SQSAPI, deadlineTime time.Time, event event
 	return sqsMessageCount, nil
 }
 
-func lambdaDataStreams(event events.SQSEvent,
-	readSnsMessagesFunc func([]string) ([]*common.DataStream, error)) ([]*common.DataStream, error) {
-
-	eventMessages := make([]string, len(event.Records))
-	for i, record := range event.Records {
-		eventMessages[i] = record.Body
+// processingScaleUp will execute nLambdas to take on more load
+func processingScaleUp(lambdaClient lambdaiface.LambdaAPI, nLambdas int) {
+	if nLambdas > 0 {
+		zap.L().Info("scaling up", zap.Int("nLambdas", nLambdas))
+		for i := 0; i < nLambdas; i++ {
+			resp, err := lambdaClient.Invoke(&lambda.InvokeInput{
+				FunctionName:   box.String("panther-log-processor"),
+				Payload:        []byte(`{"tick": true}`),
+				InvocationType: box.String(lambda.InvocationTypeEvent), // don't wait for response
+			})
+			if err != nil && awsutils.IsAnyError(err, "TooManyRequestsException") {
+				zap.L().Warn("scaling up was throttled, consider raising account lambda concurrency limits")
+				continue
+			}
+			if err != nil {
+				zap.L().Error("scaling up failed to invoke log processor", zap.Error(errors.WithStack(err)))
+				return
+			}
+			if resp.FunctionError != nil {
+				zap.L().Error("scaling up failed to invoke log processor", zap.Error(errors.Errorf(*resp.FunctionError)))
+				return
+			}
+		}
 	}
-	return readSnsMessagesFunc(eventMessages)
 }
 
 func isProcessingTimeRemaining(deadline time.Time) bool {

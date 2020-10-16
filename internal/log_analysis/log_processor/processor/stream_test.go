@@ -68,6 +68,32 @@ var (
 	}
 )
 
+func init() {
+	// set these once at start of test
+	common.Config.AwsLambdaFunctionMemorySize = 1024
+	common.Config.SqsQueueURL = "https://fakesqsurl"
+}
+
+func TestDeadline(t *testing.T) {
+	deadline := time.Now().Add(time.Second)
+	assert.True(t, isProcessingTimeRemaining(deadline), "before deadline")
+	time.Sleep(time.Second)
+	assert.False(t, isProcessingTimeRemaining(deadline), "after deadline")
+}
+
+func TestProcessingDeadline(t *testing.T) {
+	diff := time.Second
+	now := time.Now()
+	deadline := now.Add(diff)
+	processingDeadlineTime := processingDeadlineTime(deadline)
+	assert.True(t, processingDeadlineTime.Before(deadline), "before deadline")
+	// FIXME: make better
+	assert.True(t,
+		// these should be very close
+		diff/processingTimeLimitDivisor-deadline.Sub(processingDeadlineTime) < time.Second/100,
+		"correct")
+}
+
 func TestStreamEvents(t *testing.T) {
 	streamTestSqsClient, streamTestLambdaClient, streamTestDeadline := initTest()
 
@@ -87,7 +113,7 @@ func TestStreamEvents(t *testing.T) {
 func TestStreamEventsProcessingTimeLimitExceeded(t *testing.T) {
 	streamTestSqsClient, streamTestLambdaClient, streamTestDeadline := initTest()
 
-	deadline := streamTestDeadline.Add(-defaultTestTimeLimit*2) // set in the past so code exits immediately
+	deadline := streamTestDeadline.Add(-defaultTestTimeLimit * 2) // set in the past so code exits immediately
 
 	sqsMessageCount, err := streamEvents(streamTestSqsClient, streamTestLambdaClient, deadline,
 		noopProcessorFunc, noopReadSnsMessagesFunc)
@@ -112,7 +138,7 @@ func TestStreamEventsReadEventError(t *testing.T) {
 func TestStreamEventsProcessError(t *testing.T) {
 	streamTestSqsClient, streamTestLambdaClient, streamTestDeadline := initTest()
 
-	deadline := streamTestDeadline.Add(-defaultTestTimeLimit*2) // set in the past so code exits immediately
+	deadline := streamTestDeadline.Add(-defaultTestTimeLimit * 2) // set in the past so code exits immediately
 
 	_, err := streamEvents(streamTestSqsClient, streamTestLambdaClient, deadline,
 		failProcessorFunc, noopReadSnsMessagesFunc)
@@ -193,9 +219,10 @@ func TestStreamEventsDeleteSQSError(t *testing.T) {
 	streamTestSqsClient.AssertExpectations(t)
 }
 
+// FIXME: add scaleup test
+
 func initTest() (streamTestSqsClient *testutils.SqsMock, streamTestLambdaClient *testutils.LambdaMock, streamTestDeadline time.Time) {
-	common.Config.AwsLambdaFunctionMemorySize = 1024
-	common.Config.SqsQueueURL = "https://fakesqsurl"
+	// new mocks for each test
 	streamTestSqsClient = &testutils.SqsMock{}
 	streamTestLambdaClient = &testutils.LambdaMock{}
 	streamTestDeadline = time.Now().Add(defaultTestTimeLimit)

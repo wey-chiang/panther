@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,9 +46,7 @@ func TestProcessOpLog(t *testing.T) {
 	lc := lambdacontext.LambdaContext{
 		InvokedFunctionArn: functionName,
 	}
-	err := process(&lc, time.Now(), events.SQSEvent{
-		Records: []events.SQSMessage{}, // empty, should do no work
-	})
+	err := process(&lc, time.Now())
 	require.NoError(t, err)
 	message := common.OpLogNamespace + ":" + common.OpLogComponent + ":" + functionName
 	require.Equal(t, 1, len(logs.FilterMessage(message).All())) // should be just one like this
@@ -57,14 +54,4 @@ func TestProcessOpLog(t *testing.T) {
 	assert.Equal(t, message, logs.FilterMessage(message).All()[0].Entry.Message)
 	serviceDim := logs.FilterMessage(message).All()[0].ContextMap()[common.OpLogLambdaServiceDim.Key]
 	assert.Equal(t, common.OpLogLambdaServiceDim.String, serviceDim)
-	// deal with native int type which is how this is defined
-	sqsMessageCount := logs.FilterMessage(message).All()[0].ContextMap()["sqsMessageCount"]
-	switch v := sqsMessageCount.(type) {
-	case int64:
-		assert.Equal(t, int64(0), v)
-	case int32:
-		assert.Equal(t, int32(0), v)
-	default:
-		t.Errorf("unknown type for sqsMessageCount: %#v", sqsMessageCount)
-	}
 }

@@ -36,15 +36,13 @@ import (
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/registry"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/sources"
 	"github.com/panther-labs/panther/pkg/awsbatch/sqsbatch"
-	"github.com/panther-labs/panther/pkg/awsutils"
 	"github.com/panther-labs/panther/pkg/box"
 )
 
 const (
-	processingRescaleLambdaFactor = 1000 // spawn 1 lambda per this many events
-
-	processingMaxFilesLimit   = 5000 // limit this so there is time to delete from the queue at the end
-	processingTimeLimitScalar = 0.5  // the processing runtime should be shorter than lambda timeout to make room to flush buffers
+	processingMaxLambdaInvoke  = 3    // this limits how many lambdas can be invoked at once to cap rate of scaling
+	processingMaxFilesLimit    = 5000 // limit this so there is time to delete from the queue at the end
+	processingTimeLimitDivisor = 2    // the processing runtime should be shorter than lambda timeout to make room to flush buffers
 
 	sqsMaxBatchSize = 10 // max messages per read for SQS (can't find an sqs constant to refer to)
 )
@@ -64,23 +62,25 @@ func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI,
 	processFunc func(chan *common.DataStream, destinations.Destination) error,
 	generateDataStreamsFunc func([]string) ([]*common.DataStream, error)) (int, error) {
 
-	// these cannot be named return vars because it would cause a data race
-	var sqsMessageCount, totalQueuedMessages int
-	var err error
+	// this cannot be a named return var because it would cause a data race
+	var sqsMessageCount int
 
 	streamChan := make(chan *common.DataStream, 2*sqsMaxBatchSize) // use small buffer to pipeline events
-	processingDeadlineTime := deadlineTime.Add(-time.Duration(float32(time.Since(deadlineTime)) * processingTimeLimitScalar))
+	processingDeadlineTime := processingDeadlineTime(deadlineTime)
 
 	var accumulatedMessageReceipts []*string // accumulate message receipts for delete at the end
 
 	readEventErrorChan := make(chan error, 1) // below go routine closes over this for errors, 1 deep buffer
 	go func() {
+		var totalQueuedMessages int
+		var err error
 		defer func() {
 			close(streamChan)         // done reading messages, this will cause processFunc() to return
 			close(readEventErrorChan) // no more writes on err chan
 		}()
 
 		// continue to read until either there are no sqs messages or we have exceeded the processing time/file limit
+		processingDeadlineTimeExceeded := true // set to true, then if loop exits early set to false
 		highMemoryCounter := 0
 		for isProcessingTimeRemaining(processingDeadlineTime) && len(accumulatedMessageReceipts) < processingMaxFilesLimit {
 			// if we push too fast we can oom
@@ -108,13 +108,15 @@ func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI,
 
 			// keep reading from SQS to maximize output aggregation
 			messages, messageReceipts, err := sqsbatch.ReceiveMessage(sqsClient,
-				common.Config.SqsQueueURL, common.SQSWaitTime)
+				common.Config.SqsQueueURL,
+				common.SQSWaitTimeSec)
 			if err != nil {
 				readEventErrorChan <- err
 				return
 			}
 
 			if len(messages) == 0 { // no work to do but maybe more later OR reached the max sqs messages allowed in flight, either way break
+				processingDeadlineTimeExceeded = false
 				break
 			}
 
@@ -136,14 +138,16 @@ func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI,
 		} // end processing events
 
 		// finished processing, did we stop with events in the q? if so and there are many more, then we need to scaleUp
-		processingScaleUp(lambdaClient, totalQueuedMessages/processingRescaleLambdaFactor)
+		if processingDeadlineTimeExceeded {
+			processingScaleUp(lambdaClient, totalQueuedMessages/processingMaxFilesLimit)
+		}
 	}()
 
 	// Use a properly configured JSON API for Athena quirks
 	jsonAPI := common.BuildJSON()
 	registeredLogTypes := registry.Default()
 	// process streamChan until closed (blocks)
-	err = processFunc(streamChan, destinations.CreateS3Destination(registeredLogTypes, jsonAPI))
+	err := processFunc(streamChan, destinations.CreateS3Destination(registeredLogTypes, jsonAPI))
 	if err != nil { // prefer Process() error to readEventError
 		return 0, err
 	}
@@ -157,9 +161,18 @@ func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI,
 	return sqsMessageCount, nil
 }
 
+// processingDeadlineTime calcs a time less than the deadllineTime to allow time for buffers to flush
+func processingDeadlineTime(deadlineTime time.Time) time.Time {
+	// NOTE: time.Since(deadlineTime) will be negative since the deadline is in the future!
+	return deadlineTime.Add(time.Since(deadlineTime) / processingTimeLimitDivisor)
+}
+
 // processingScaleUp will execute nLambdas to take on more load
 func processingScaleUp(lambdaClient lambdaiface.LambdaAPI, nLambdas int) {
 	if nLambdas > 0 {
+		if nLambdas > processingMaxLambdaInvoke { // clip to cap rate of increase under very high load
+			nLambdas = processingMaxLambdaInvoke
+		}
 		zap.L().Info("scaling up", zap.Int("nLambdas", nLambdas))
 		for i := 0; i < nLambdas; i++ {
 			resp, err := lambdaClient.Invoke(&lambda.InvokeInput{
@@ -167,16 +180,14 @@ func processingScaleUp(lambdaClient lambdaiface.LambdaAPI, nLambdas int) {
 				Payload:        []byte(`{"tick": true}`),
 				InvocationType: box.String(lambda.InvocationTypeEvent), // don't wait for response
 			})
-			if err != nil && awsutils.IsAnyError(err, "TooManyRequestsException") {
-				zap.L().Warn("scaling up was throttled, consider raising account lambda concurrency limits")
-				continue
-			}
 			if err != nil {
-				zap.L().Error("scaling up failed to invoke log processor", zap.Error(errors.WithStack(err)))
+				zap.L().Error("scaling up failed to invoke log processor",
+					zap.Error(errors.WithStack(err)))
 				return
 			}
 			if resp.FunctionError != nil {
-				zap.L().Error("scaling up failed to invoke log processor", zap.Error(errors.Errorf(*resp.FunctionError)))
+				zap.L().Error("scaling up failed to invoke log processor",
+					zap.Error(errors.Errorf(*resp.FunctionError)))
 				return
 			}
 		}

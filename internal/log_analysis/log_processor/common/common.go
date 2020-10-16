@@ -51,11 +51,10 @@ var (
 	S3Uploader   s3manageriface.UploaderAPI
 	SqsClient    sqsiface.SQSAPI
 	SnsClient    snsiface.SNSAPI
-	lambdaClient lambdaiface.LambdaAPI
 
 	Config EnvConfig
 
-	SQSWaitTime int64 // set by env
+	SQSWaitTimeSec int64 // set by env
 )
 
 type EnvConfig struct {
@@ -74,7 +73,6 @@ func Setup() {
 	S3Uploader = s3manager.NewUploader(Session)
 	SqsClient = sqs.New(Session)
 	SnsClient = sns.New(Session)
-	LambdaClient = lambda.New(Session)
 
 	err := envconfig.Process("", &Config)
 	if err != nil {
@@ -84,11 +82,12 @@ func Setup() {
 	// we will use the queue delay as the sqs WaitTime
 	// NOTE: we want it at least 1 and at most 20
 	if Config.SqsDelaySec < 1 {
-		SQSWaitTime = 1
-	} else if Config.SqsDelaySec > 20 {
-		SQSWaitTime = 20 //  note: 20 is max for sqs
+		SQSWaitTimeSec = 1
+	} else if Config.SqsDelaySec >= 20 {
+		SQSWaitTimeSec = 20 //  note: 20 is max for sqs
 	} else {
-		SQSWaitTime = Config.SqsDelaySec
+		// add 1 second to wait time since it is set to the queue delay (avoid edge case)
+		SQSWaitTimeSec = Config.SqsDelaySec + 1
 	}
 }
 

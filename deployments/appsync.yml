@@ -1876,7 +1876,12 @@ Resources:
             "headers": {
               "Content-Type": "application/json"
             },
-            "body": $util.toJson($ctx.args.input)
+            "body": $util.toJson({
+              "body": $ctx.args.input.body,
+              "resourceTypes": $ctx.args.input.resourceTypes,
+              "tests": $ctx.args.input.tests,
+              "analysisType": "POLICY"
+            })
           }
         }
       ResponseMappingTemplate: |
@@ -1905,13 +1910,45 @@ Resources:
             "headers": {
               "Content-Type": "application/json"
             },
-            "body": $util.toJson($ctx.args.input)
+            "body": $util.toJson({
+              "body": $ctx.args.input.body,
+              "resourceTypes": $ctx.args.input.logTypes,
+              "tests": $ctx.args.input.tests,
+              "analysisType": "RULE"
+            })
           }
         }
       ResponseMappingTemplate: |
         #set ($statusCode = $ctx.result.statusCode)
         #if($statusCode == 200)
-            $ctx.result.body
+          #set ($payload = [])
+          #foreach($resultItem in $util.parseJson($ctx.result.body))
+            #set ($payloadItem = {})
+            $util.qr($payloadItem.put("id", $resultItem.id))
+            $util.qr($payloadItem.put("name", $resultItem.testName))
+            $util.qr($payloadItem.put("passed", $resultItem.matched))
+
+            $util.qr($payloadItem.put("title", { "output": $resultItem.titleOutput }))
+            #if ($resultItem.titleError)
+              $util.qr($payloadItem.title.put("error", { "message": $resultItem.titleError }))
+            #end
+
+            $util.qr($payloadItem.put("dedup", { "output": $resultItem.dedupOutput }))
+            #if ($resultItem.dedupError)
+              $util.qr($payloadItem.dedup.put("error", { "message": $resultItem.dedupError }))
+            #end
+
+            #if ($resultItem.ruleError)
+              $util.qr($payloadItem.put("error", { "message": $resultItem.ruleError }))
+            #end
+            #if ($resultItem.genericError)
+              $util.qr($payloadItem.put("error", { "message": $resultItem.genericError }))
+            #end
+
+            $util.qr($payload.add($payloadItem))
+          #end
+          $util.toJson($payload)
+
         #elseif($statusCode >= 400 && $statusCode < 500)
             $util.error($util.parseJson($ctx.result.body).message, "$statusCode", $input)
         #else

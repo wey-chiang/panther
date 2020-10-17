@@ -72,15 +72,14 @@ func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI,
 
 	readEventErrorChan := make(chan error, 1) // below go routine closes over this for errors, 1 deep buffer
 	go func() {
-		var totalQueuedMessages int
-		var err error
+		var initialTotalQueuedMessages, // first non-zero estimate of queue size
+			lastTotalQueuedMessages int // last non-zero estimate of queue size
 		defer func() {
 			close(streamChan)         // done reading messages, this will cause processFunc() to return
 			close(readEventErrorChan) // no more writes on err chan
 		}()
 
 		// continue to read until either there are no sqs messages or we have exceeded the processing time/file limit
-		processingDeadlineTimeExceeded := true // set to true, then if loop exits early set to false
 		highMemoryCounter := 0
 		for isProcessingTimeRemaining(processingDeadlineTime) && len(accumulatedMessageReceipts) < processingMaxFilesLimit {
 			// if we push too fast we can oom
@@ -97,7 +96,7 @@ func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI,
 			}
 
 			// under no load we do not read from the sqs queue and just exit
-			totalQueuedMessages, err = queueDepth(sqsClient) // this includes queued and delayed messages
+			totalQueuedMessages, err := queueDepth(sqsClient) // this includes queued and delayed messages
 			if err != nil {
 				readEventErrorChan <- err
 				return
@@ -106,17 +105,22 @@ func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI,
 				break
 			}
 
+			// use these to estimate the derivative of the load on the events q (I said `derivative`, this must be ML!)
+			if initialTotalQueuedMessages == 0 { // first non-zero estimate
+				initialTotalQueuedMessages = totalQueuedMessages
+			}
+			// last non-zero estimate
+			lastTotalQueuedMessages = totalQueuedMessages
+
 			// keep reading from SQS to maximize output aggregation
 			messages, messageReceipts, err := sqsbatch.ReceiveMessage(sqsClient,
-				common.Config.SqsQueueURL,
-				common.SQSWaitTimeSec)
+				common.Config.SqsQueueURL, common.SQSWaitTimeSec)
 			if err != nil {
 				readEventErrorChan <- err
 				return
 			}
 
-			if len(messages) == 0 { // no work to do but maybe more later OR reached the max sqs messages allowed in flight, either way break
-				processingDeadlineTimeExceeded = false
+			if len(messages) == 0 { // no work to do but maybe more later OR reached the max sqs messages allowed in flight, either way need to break
 				break
 			}
 
@@ -135,12 +139,14 @@ func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI,
 			for _, dataStream := range dataStreams {
 				streamChan <- dataStream
 			}
-		} // end processing events
-
-		// finished processing, did we stop with events in the q? if so and there are many more, then we need to scaleUp
-		if processingDeadlineTimeExceeded {
-			processingScaleUp(lambdaClient, totalQueuedMessages/processingMaxFilesLimit)
 		}
+
+		// if the slope of the change in event q is strictly positive, then rescale relative to the change (gradient ascent)
+		if initialTotalQueuedMessages < lastTotalQueuedMessages {
+			processingScaleUp(lambdaClient, (lastTotalQueuedMessages-initialTotalQueuedMessages)/processingMaxFilesLimit)
+		}
+		// this works to reduce the dc bias in the event q curve
+		processingScaleUp(lambdaClient, lastTotalQueuedMessages/processingMaxFilesLimit)
 	}()
 
 	// Use a properly configured JSON API for Athena quirks

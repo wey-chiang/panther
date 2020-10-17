@@ -55,7 +55,7 @@ func (table *AlertsTable) UpdateAlertStatus(input *models.UpdateAlertStatusInput
 				ExpressionAttributeNames:            expression.Names(),
 				ExpressionAttributeValues:           expression.Values(),
 				Key:                                 alertKey,
-				ReturnValuesOnConditionCheckFailure: aws.String("ALL_NEW"),
+				ReturnValuesOnConditionCheckFailure: aws.String("ALL_OLD"),
 				TableName:                           &table.AlertsTableName,
 				UpdateExpression:                    expression.Update(),
 			},
@@ -69,7 +69,7 @@ func (table *AlertsTable) UpdateAlertStatus(input *models.UpdateAlertStatusInput
 	}
 
 	updatedAlerts := []*AlertItem{}
-	if err := table.updateAll(transactWriteItemsInput, updatedAlerts); err != nil {
+	if err := table.updateAll(transactWriteItemsInput, &updatedAlerts); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +186,6 @@ func (table *AlertsTable) updateAll(
 	transactWriteItems *dynamodb.TransactWriteItemsInput,
 	newItems interface{},
 ) error {
-
 	// Perform the batch update transaction
 	_, err := table.Client.TransactWriteItems(transactWriteItems)
 	if err != nil {
@@ -199,8 +198,8 @@ func (table *AlertsTable) updateAll(
 	for _, item := range transactWriteItems.TransactItems {
 		transactGetItem := &dynamodb.TransactGetItem{
 			Get: &dynamodb.Get{
-				TableName: item.ConditionCheck.TableName,
-				Key:       item.ConditionCheck.Key,
+				TableName: item.Update.TableName,
+				Key:       item.Update.Key,
 			},
 		}
 		transactGetItems = append(transactGetItems, transactGetItem)
@@ -215,12 +214,11 @@ func (table *AlertsTable) updateAll(
 		return &genericapi.AWSError{Method: "dynamodb.TransactGetItems", Err: err}
 	}
 
-	// Exctract results
+	// Exctract results and unmarshal
 	alerts := []DynamoItem{}
 	for _, response := range result.Responses {
 		alerts = append(alerts, response.Item)
 	}
-
 	if err = dynamodbattribute.UnmarshalListOfMaps(alerts, newItems); err != nil {
 		return &genericapi.InternalError{Message: "failed to unmarshal dynamo items: " + err.Error()}
 	}

@@ -30,41 +30,50 @@ import (
 	"github.com/panther-labs/panther/pkg/genericapi"
 )
 
-// UpdateAlertStatus - updates the alert details and returns the updated item
-func (table *AlertsTable) UpdateAlertStatus(input *models.UpdateAlertStatusInput) (*AlertItem, error) {
-	// Create the dynamo key we want to update
-	var alertKey = DynamoItem{AlertIDKey: {S: aws.String(*input.AlertID)}}
+// UpdateAlertStatus - updates all the specified alerts and returns the updated list
+func (table *AlertsTable) UpdateAlertStatus(input *models.UpdateAlertStatusInput) ([]*AlertItem, error) {
+	transactWriteItems := []*dynamodb.TransactWriteItem{}
+	for _, alertID := range input.AlertIDs {
+		// Create the dynamo key we want to update
+		var alertKey = DynamoItem{AlertIDKey: {S: aws.String(*alertID)}}
 
-	// Create the update builder
-	updateBuilder := createUpdateBuilder(input)
+		// Create the update builder
+		updateBuilder := createUpdateBuilder(input)
 
-	// Create the condition builder
-	conditionBuilder := createConditionBuilder(input)
+		// Create the condition builder
+		conditionBuilder := createConditionBuilder(alertID)
 
-	// Build an expression from our builders
-	expression, err := buildExpression(updateBuilder, conditionBuilder)
-	if err != nil {
+		// Build an expression from our builders
+		expression, err := buildExpression(updateBuilder, conditionBuilder)
+		if err != nil {
+			return nil, err
+		}
+
+		transactWriteItem := &dynamodb.TransactWriteItem{
+			Update: &dynamodb.Update{
+				ConditionExpression:                 expression.Condition(),
+				ExpressionAttributeNames:            expression.Names(),
+				ExpressionAttributeValues:           expression.Values(),
+				Key:                                 alertKey,
+				ReturnValuesOnConditionCheckFailure: aws.String("ALL_NEW"),
+				TableName:                           &table.AlertsTableName,
+				UpdateExpression:                    expression.Update(),
+			},
+		}
+
+		transactWriteItems = append(transactWriteItems, transactWriteItem)
+	}
+
+	transactWriteItemsInput := &dynamodb.TransactWriteItemsInput{
+		TransactItems: transactWriteItems,
+	}
+
+	updatedAlerts := []*AlertItem{}
+	if err := table.updateAll(transactWriteItemsInput, updatedAlerts); err != nil {
 		return nil, err
 	}
 
-	// Create our dynamo update item
-	updateItem := dynamodb.UpdateItemInput{
-		ExpressionAttributeNames:  expression.Names(),
-		ExpressionAttributeValues: expression.Values(),
-		Key:                       alertKey,
-		ReturnValues:              aws.String("ALL_NEW"),
-		TableName:                 &table.AlertsTableName,
-		UpdateExpression:          expression.Update(),
-		ConditionExpression:       expression.Condition(),
-	}
-
-	// Run the update query and marshal
-	updatedAlert := &AlertItem{}
-	if err = table.update(updateItem, &updatedAlert); err != nil {
-		return nil, err
-	}
-
-	return updatedAlert, nil
+	return updatedAlerts, nil
 }
 
 // UpdateAlertDelivery - updates the alert details and returns the updated item
@@ -132,8 +141,8 @@ func createUpdateBuilder(input *models.UpdateAlertStatusInput) expression.Update
 }
 
 // createConditionBuilder - creates a condition builder
-func createConditionBuilder(input *models.UpdateAlertStatusInput) expression.ConditionBuilder {
-	return expression.Equal(expression.Name(AlertIDKey), expression.Value(input.AlertID))
+func createConditionBuilder(alertID *string) expression.ConditionBuilder {
+	return expression.Equal(expression.Name(AlertIDKey), expression.Value(alertID))
 }
 
 // buildExpression - builds an expression
@@ -168,6 +177,52 @@ func (table *AlertsTable) update(
 
 	if err = dynamodbattribute.UnmarshalMap(response.Attributes, newItem); err != nil {
 		return &genericapi.InternalError{Message: "failed to unmarshal dynamo item: " + err.Error()}
+	}
+	return nil
+}
+
+// table.updateAll - runs a TransactWrite query with Update (25 items max)
+func (table *AlertsTable) updateAll(
+	transactWriteItems *dynamodb.TransactWriteItemsInput,
+	newItems interface{},
+) error {
+
+	// Perform the batch update transaction
+	_, err := table.Client.TransactWriteItems(transactWriteItems)
+	if err != nil {
+		return &genericapi.AWSError{Method: "dynamodb.TransactWriteItems", Err: err}
+	}
+
+	// Next, we perform a batch get transaction since the update transaction doesn't return any values.
+	// We start by constructing the get input by inspecting the write input
+	transactGetItems := []*dynamodb.TransactGetItem{}
+	for _, item := range transactWriteItems.TransactItems {
+		transactGetItem := &dynamodb.TransactGetItem{
+			Get: &dynamodb.Get{
+				TableName: item.ConditionCheck.TableName,
+				Key:       item.ConditionCheck.Key,
+			},
+		}
+		transactGetItems = append(transactGetItems, transactGetItem)
+	}
+	transactGetItemsInput := &dynamodb.TransactGetItemsInput{
+		TransactItems: transactGetItems,
+	}
+
+	// Make the request
+	result, err := table.Client.TransactGetItems(transactGetItemsInput)
+	if err != nil {
+		return &genericapi.AWSError{Method: "dynamodb.TransactGetItems", Err: err}
+	}
+
+	// Exctract results
+	alerts := []DynamoItem{}
+	for _, response := range result.Responses {
+		alerts = append(alerts, response.Item)
+	}
+
+	if err = dynamodbattribute.UnmarshalListOfMaps(alerts, newItems); err != nil {
+		return &genericapi.InternalError{Message: "failed to unmarshal dynamo items: " + err.Error()}
 	}
 	return nil
 }

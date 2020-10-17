@@ -209,7 +209,7 @@ input DeliverAlertInput {
 }
 
 input UpdateAlertStatusInput {
-  alertId: ID!
+  alertIds: [ID]!
   status: AlertStatusesEnum!
 }
 

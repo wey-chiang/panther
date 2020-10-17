@@ -19,27 +19,35 @@ package api
  */
 
 import (
+	"fmt"
+
 	"github.com/panther-labs/panther/api/lambda/alerts/models"
 	"github.com/panther-labs/panther/internal/log_analysis/alerts_api/utils"
 	"github.com/panther-labs/panther/pkg/gatewayapi"
 )
 
 // UpdateAlertStatus modifies an alert's attributes.
-func (API) UpdateAlertStatus(input *models.UpdateAlertStatusInput) (result *models.UpdateAlertStatusOutput, err error) {
+func (API) UpdateAlertStatus(input *models.UpdateAlertStatusInput) (results models.UpdateAlertStatusOutput, err error) {
 	// Run the update alert query
-	alertItem, err := alertsDB.UpdateAlertStatus(input)
+	alertItems, err := alertsDB.UpdateAlertStatus(input)
 	if err != nil {
 		return nil, err
 	}
 
 	// If there was no item from the DB, we return an empty response
-	if alertItem == nil {
-		return &models.UpdateAlertStatusOutput{}, nil
+	if len(alertItems) == 0 {
+		return results, nil
 	}
 
 	// Marshal to an alert summary
-	result = utils.AlertItemToSummary(alertItem)
+	results = utils.AlertItemsToSummaries(alertItems)
 
-	gatewayapi.ReplaceMapSliceNils(result)
-	return result, nil
+	for _, result := range results {
+		fmt.Println("alertId:", *result.AlertID)
+		fmt.Println("status:", result.Status)
+		fmt.Println("LastUpdatedBy:", result.LastUpdatedBy)
+		fmt.Println("LastUpdatedByTime:", result.LastUpdatedByTime)
+		gatewayapi.ReplaceMapSliceNils(result)
+	}
+	return results, nil
 }

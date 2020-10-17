@@ -34,28 +34,47 @@ func TestUpdateAlert(t *testing.T) {
 	tableMock := &tableMock{}
 	alertsDB = tableMock
 
-	alertID := aws.String("alertId")
+	alertID1 := aws.String("alertId_1")
+	alertID2 := aws.String("alertId_2")
 	status := aws.String("")
 	userID := aws.String("userId")
 	timeNow := time.Now()
 	input := &models.UpdateAlertStatusInput{
-		AlertID: alertID,
-		Status:  status,
-		UserID:  userID,
+		AlertIDs: []*string{alertID1, alertID2},
+		Status:   status,
+		UserID:   userID,
 	}
-	output := &table.AlertItem{
-		AlertID:           *alertID,
-		Status:            "CLOSED",
-		LastUpdatedBy:     *userID,
-		LastUpdatedByTime: timeNow,
-		DeliveryResponses: []*models.DeliveryResponse{},
+	output := []*table.AlertItem{
+		{
+			AlertID:           *alertID1,
+			Status:            "CLOSED",
+			LastUpdatedBy:     *userID,
+			LastUpdatedByTime: timeNow,
+			DeliveryResponses: []*models.DeliveryResponse{},
+		},
+		{
+			AlertID:           *alertID2,
+			Status:            "CLOSED",
+			LastUpdatedBy:     *userID,
+			LastUpdatedByTime: timeNow,
+			DeliveryResponses: []*models.DeliveryResponse{},
+		},
 	}
-	expectedSummary := &models.AlertSummary{
-		AlertID:           aws.String("alertId"),
-		Status:            "CLOSED",
-		LastUpdatedBy:     "userId",
-		LastUpdatedByTime: timeNow,
-		DeliveryResponses: []*models.DeliveryResponse{},
+	expectedSummaries := []*models.AlertSummary{
+		{
+			AlertID:           alertID1,
+			Status:            "CLOSED",
+			LastUpdatedBy:     *userID,
+			LastUpdatedByTime: timeNow,
+			DeliveryResponses: []*models.DeliveryResponse{},
+		},
+		{
+			AlertID:           alertID2,
+			Status:            "CLOSED",
+			LastUpdatedBy:     *userID,
+			LastUpdatedByTime: timeNow,
+			DeliveryResponses: []*models.DeliveryResponse{},
+		},
 	}
 
 	tableMock.On("UpdateAlertStatus", input).Return(output, nil).Once()
@@ -63,13 +82,22 @@ func TestUpdateAlert(t *testing.T) {
 	require.NoError(t, err)
 
 	// Marshal to convert "" to nils and focus on our properties
-	resultSummary := &models.AlertSummary{
-		AlertID:           result.AlertID,
-		Status:            result.Status,
-		LastUpdatedBy:     result.LastUpdatedBy,
-		LastUpdatedByTime: result.LastUpdatedByTime,
-		DeliveryResponses: []*models.DeliveryResponse{},
+	resultSummaries := []*models.AlertSummary{
+		{
+			AlertID:           result[0].AlertID,
+			Status:            result[0].Status,
+			LastUpdatedBy:     result[0].LastUpdatedBy,
+			LastUpdatedByTime: result[0].LastUpdatedByTime,
+			DeliveryResponses: []*models.DeliveryResponse{},
+		},
+		{
+			AlertID:           result[1].AlertID,
+			Status:            result[1].Status,
+			LastUpdatedBy:     result[1].LastUpdatedBy,
+			LastUpdatedByTime: result[1].LastUpdatedByTime,
+			DeliveryResponses: []*models.DeliveryResponse{},
+		},
 	}
 
-	assert.Equal(t, expectedSummary, resultSummary)
+	assert.Equal(t, expectedSummaries, resultSummaries)
 }

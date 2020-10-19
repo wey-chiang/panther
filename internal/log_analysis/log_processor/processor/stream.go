@@ -33,7 +33,7 @@ import (
 
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/common"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/destinations"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/registry"
+	"github.com/panther-labs/panther/internal/log_analysis/log_processor/logtypes"
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/sources"
 	"github.com/panther-labs/panther/pkg/awsbatch/sqsbatch"
 	"github.com/panther-labs/panther/pkg/box"
@@ -53,13 +53,26 @@ The function will attempt to read more messages from the queue when the queue ha
 the lambda will continue to read events and maximally aggregate data to produce fewer, bigger files.
 Fewer, bigger files makes Athena queries much faster.
 */
-func StreamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI, deadlineTime time.Time) (sqsMessageCount int, err error) {
-	return streamEvents(sqsClient, lambdaClient, deadlineTime, Process, sources.ReadSnsMessages)
+func StreamEvents(
+	sqsClient sqsiface.SQSAPI,
+	lambdaClient lambdaiface.LambdaAPI,
+	resolver logtypes.Resolver,
+	deadlineTime time.Time,
+) (sqsMessageCount int, err error) {
+
+	newProcessor := NewFactory(resolver)
+	process := func(streams <-chan *common.DataStream, dest destinations.Destination) error {
+		return Process(streams, dest, newProcessor)
+	}
+	return streamEvents(sqsClient, lambdaClient, deadlineTime, process, sources.ReadSnsMessages)
 }
 
 // entry point for unit testing, pass in read/process functions
-func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI, deadlineTime time.Time,
-	processFunc func(chan *common.DataStream, destinations.Destination) error,
+func streamEvents(
+	sqsClient sqsiface.SQSAPI,
+	lambdaClient lambdaiface.LambdaAPI,
+	deadlineTime time.Time,
+	processFunc ProcessFunc,
 	generateDataStreamsFunc func([]string) ([]*common.DataStream, error)) (int, error) {
 
 	// this cannot be a named return var because it would cause a data race
@@ -151,10 +164,9 @@ func streamEvents(sqsClient sqsiface.SQSAPI, lambdaClient lambdaiface.LambdaAPI,
 
 	// Use a properly configured JSON API for Athena quirks
 	jsonAPI := common.BuildJSON()
-	registeredLogTypes := registry.Default()
 	// process streamChan until closed (blocks)
-	err := processFunc(streamChan, destinations.CreateS3Destination(registeredLogTypes, jsonAPI))
-	if err != nil { // prefer Process() error to readEventError
+	dest := destinations.CreateS3Destination(jsonAPI)
+	if err := processFunc(streamChan, dest); err != nil {
 		return 0, err
 	}
 	readEventError := <-readEventErrorChan

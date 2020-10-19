@@ -1,4 +1,4 @@
-package cloudflarelogs_test
+package sophoslogs
 
 /**
  * Panther is a Cloud-Native SIEM for the Modern Security Team.
@@ -19,12 +19,15 @@ package cloudflarelogs_test
  */
 
 import (
-	"testing"
-
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/logtypes"
-	"github.com/panther-labs/panther/internal/log_analysis/log_processor/logtypes/logtesting"
 )
 
-func TestCloudflareLogParsers(t *testing.T) {
-	logtesting.RunTestsFromYAML(t, logtypes.DefaultRegistry(), "./testdata/cloudflare_tests.yml")
+func init() {
+	logtypes.MustRegisterJSON(logtypes.Desc{
+		Name:         "Sophos.Central",
+		Description:  `Sophos Central events`,
+		ReferenceURL: `https://support.sophos.com/support/s/article/KB-000038307?language=en_US`,
+	}, func() interface{} {
+		return &SophosCentralEvent{}
+	})
 }

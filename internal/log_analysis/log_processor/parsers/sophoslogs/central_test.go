@@ -1,4 +1,4 @@
-package cloudflarelogs_test
+package sophoslogs_test
 
 /**
  * Panther is a Cloud-Native SIEM for the Modern Security Team.
@@ -25,6 +25,6 @@ import (
 	"github.com/panther-labs/panther/internal/log_analysis/log_processor/logtypes/logtesting"
 )
 
-func TestCloudflareLogParsers(t *testing.T) {
-	logtesting.RunTestsFromYAML(t, logtypes.DefaultRegistry(), "./testdata/cloudflare_tests.yml")
+func TestSophosCentralParser(t *testing.T) {
+	logtesting.RunTestsFromYAML(t, logtypes.DefaultRegistry(), "./testdata/central_tests.yml")
 }

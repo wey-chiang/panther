@@ -942,11 +942,10 @@ type TestRuleSubRecord {
   error: Error
 }
 
-type TestRecord {
+interface TestRecord {
   id: String!
   name: String!
   passed: Boolean!
-  functions: TestRuleRecordFunctions!
   error: Error
 }
 
@@ -954,8 +953,16 @@ type TestPolicyRecordFunctions {
   policyFunction: TestRuleSubRecord!
 }
 
+type TestPolicyRecord implements TestRecord {
+  id: String!
+  name: String!
+  passed: Boolean!
+  functions: TestPolicyRecordFunctions!
+  error: Error
+}
+
 type TestPolicyResponse {
-  records: [TestRecord!]!
+  results: [TestPolicyRecord!]!
 }
 
 type TestRuleRecordFunctions {
@@ -964,8 +971,16 @@ type TestRuleRecordFunctions {
   dedupFunction: TestRuleSubRecord
 }
 
+type TestRuleRecord implements TestRecord {
+  id: String!
+  name: String!
+  passed: Boolean!
+  functions: TestRuleRecordFunctions!
+  error: Error
+}
+
 type TestRuleResponse {
-  results: [TestRecord!]!
+  results: [TestRuleRecord!]!
 }
 
 type ResourceSummary {

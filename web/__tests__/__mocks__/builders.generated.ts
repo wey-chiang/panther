@@ -121,10 +121,11 @@ import {
   SqsLogSourceIntegration,
   SuppressPoliciesInput,
   TestPolicyInput,
+  TestPolicyRecord,
   TestPolicyRecordFunctions,
   TestPolicyResponse,
-  TestRecord,
   TestRuleInput,
+  TestRuleRecord,
   TestRuleRecordFunctions,
   TestRuleResponse,
   TestRuleSubRecord,
@@ -1433,6 +1434,19 @@ export const buildTestPolicyInput = (overrides: Partial<TestPolicyInput> = {}): 
   };
 };
 
+export const buildTestPolicyRecord = (
+  overrides: Partial<TestPolicyRecord> = {}
+): TestPolicyRecord => {
+  return {
+    __typename: 'TestPolicyRecord',
+    id: 'id' in overrides ? overrides.id : 'Soft',
+    name: 'name' in overrides ? overrides.name : 'Utah',
+    passed: 'passed' in overrides ? overrides.passed : false,
+    functions: 'functions' in overrides ? overrides.functions : buildTestPolicyRecordFunctions(),
+    error: 'error' in overrides ? overrides.error : buildError(),
+  };
+};
+
 export const buildTestPolicyRecordFunctions = (
   overrides: Partial<TestPolicyRecordFunctions> = {}
 ): TestPolicyRecordFunctions => {
@@ -1448,18 +1462,7 @@ export const buildTestPolicyResponse = (
 ): TestPolicyResponse => {
   return {
     __typename: 'TestPolicyResponse',
-    records: 'records' in overrides ? overrides.records : [buildTestRecord()],
-  };
-};
-
-export const buildTestRecord = (overrides: Partial<TestRecord> = {}): TestRecord => {
-  return {
-    __typename: 'TestRecord',
-    id: 'id' in overrides ? overrides.id : 'distributed',
-    name: 'name' in overrides ? overrides.name : 'convergence',
-    passed: 'passed' in overrides ? overrides.passed : true,
-    functions: 'functions' in overrides ? overrides.functions : buildTestRuleRecordFunctions(),
-    error: 'error' in overrides ? overrides.error : buildError(),
+    results: 'results' in overrides ? overrides.results : [buildTestPolicyRecord()],
   };
 };
 
@@ -1468,6 +1471,17 @@ export const buildTestRuleInput = (overrides: Partial<TestRuleInput> = {}): Test
     body: 'body' in overrides ? overrides.body : 'Steel',
     logTypes: 'logTypes' in overrides ? overrides.logTypes : ['project'],
     tests: 'tests' in overrides ? overrides.tests : [buildPolicyUnitTestInput()],
+  };
+};
+
+export const buildTestRuleRecord = (overrides: Partial<TestRuleRecord> = {}): TestRuleRecord => {
+  return {
+    __typename: 'TestRuleRecord',
+    id: 'id' in overrides ? overrides.id : 'Oklahoma',
+    name: 'name' in overrides ? overrides.name : 'Pants',
+    passed: 'passed' in overrides ? overrides.passed : true,
+    functions: 'functions' in overrides ? overrides.functions : buildTestRuleRecordFunctions(),
+    error: 'error' in overrides ? overrides.error : buildError(),
   };
 };
 
@@ -1489,7 +1503,7 @@ export const buildTestRuleResponse = (
 ): TestRuleResponse => {
   return {
     __typename: 'TestRuleResponse',
-    results: 'results' in overrides ? overrides.results : [buildTestRecord()],
+    results: 'results' in overrides ? overrides.results : [buildTestRuleRecord()],
   };
 };
 

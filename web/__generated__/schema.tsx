@@ -1221,6 +1221,15 @@ export type TestPolicyInput = {
   tests: Array<PolicyUnitTestInput>;
 };
 
+export type TestPolicyRecord = TestRecord & {
+  __typename?: 'TestPolicyRecord';
+  id: Scalars['String'];
+  name: Scalars['String'];
+  passed: Scalars['Boolean'];
+  functions: TestPolicyRecordFunctions;
+  error?: Maybe<Error>;
+};
+
 export type TestPolicyRecordFunctions = {
   __typename?: 'TestPolicyRecordFunctions';
   policyFunction: TestRuleSubRecord;
@@ -1228,15 +1237,13 @@ export type TestPolicyRecordFunctions = {
 
 export type TestPolicyResponse = {
   __typename?: 'TestPolicyResponse';
-  records: Array<TestRecord>;
+  results: Array<TestPolicyRecord>;
 };
 
 export type TestRecord = {
-  __typename?: 'TestRecord';
   id: Scalars['String'];
   name: Scalars['String'];
   passed: Scalars['Boolean'];
-  functions: TestRuleRecordFunctions;
   error?: Maybe<Error>;
 };
 
@@ -1244,6 +1251,15 @@ export type TestRuleInput = {
   body: Scalars['String'];
   logTypes: Array<Scalars['String']>;
   tests: Array<PolicyUnitTestInput>;
+};
+
+export type TestRuleRecord = TestRecord & {
+  __typename?: 'TestRuleRecord';
+  id: Scalars['String'];
+  name: Scalars['String'];
+  passed: Scalars['Boolean'];
+  functions: TestRuleRecordFunctions;
+  error?: Maybe<Error>;
 };
 
 export type TestRuleRecordFunctions = {
@@ -1255,7 +1271,7 @@ export type TestRuleRecordFunctions = {
 
 export type TestRuleResponse = {
   __typename?: 'TestRuleResponse';
-  results: Array<TestRecord>;
+  results: Array<TestRuleRecord>;
 };
 
 export type TestRuleSubRecord = {
@@ -1585,12 +1601,15 @@ export type ResolversTypes = {
   SuppressPoliciesInput: SuppressPoliciesInput;
   TestPolicyInput: TestPolicyInput;
   TestPolicyResponse: ResolverTypeWrapper<TestPolicyResponse>;
-  TestRecord: ResolverTypeWrapper<TestRecord>;
-  TestRuleRecordFunctions: ResolverTypeWrapper<TestRuleRecordFunctions>;
-  TestRuleSubRecord: ResolverTypeWrapper<TestRuleSubRecord>;
+  TestPolicyRecord: ResolverTypeWrapper<TestPolicyRecord>;
+  TestRecord: ResolversTypes['TestPolicyRecord'] | ResolversTypes['TestRuleRecord'];
   Error: ResolverTypeWrapper<Error>;
+  TestPolicyRecordFunctions: ResolverTypeWrapper<TestPolicyRecordFunctions>;
+  TestRuleSubRecord: ResolverTypeWrapper<TestRuleSubRecord>;
   TestRuleInput: TestRuleInput;
   TestRuleResponse: ResolverTypeWrapper<TestRuleResponse>;
+  TestRuleRecord: ResolverTypeWrapper<TestRuleRecord>;
+  TestRuleRecordFunctions: ResolverTypeWrapper<TestRuleRecordFunctions>;
   UpdateAlertStatusInput: UpdateAlertStatusInput;
   UpdateComplianceIntegrationInput: UpdateComplianceIntegrationInput;
   UpdateS3LogIntegrationInput: UpdateS3LogIntegrationInput;
@@ -1602,7 +1621,6 @@ export type ResolversTypes = {
   UploadPoliciesInput: UploadPoliciesInput;
   UploadPoliciesResponse: ResolverTypeWrapper<UploadPoliciesResponse>;
   ModifyGlobalPythonModuleInput: ModifyGlobalPythonModuleInput;
-  TestPolicyRecordFunctions: ResolverTypeWrapper<TestPolicyRecordFunctions>;
   AccountTypeEnum: AccountTypeEnum;
 };
 
@@ -1736,12 +1754,15 @@ export type ResolversParentTypes = {
   SuppressPoliciesInput: SuppressPoliciesInput;
   TestPolicyInput: TestPolicyInput;
   TestPolicyResponse: TestPolicyResponse;
-  TestRecord: TestRecord;
-  TestRuleRecordFunctions: TestRuleRecordFunctions;
-  TestRuleSubRecord: TestRuleSubRecord;
+  TestPolicyRecord: TestPolicyRecord;
+  TestRecord: ResolversParentTypes['TestPolicyRecord'] | ResolversParentTypes['TestRuleRecord'];
   Error: Error;
+  TestPolicyRecordFunctions: TestPolicyRecordFunctions;
+  TestRuleSubRecord: TestRuleSubRecord;
   TestRuleInput: TestRuleInput;
   TestRuleResponse: TestRuleResponse;
+  TestRuleRecord: TestRuleRecord;
+  TestRuleRecordFunctions: TestRuleRecordFunctions;
   UpdateAlertStatusInput: UpdateAlertStatusInput;
   UpdateComplianceIntegrationInput: UpdateComplianceIntegrationInput;
   UpdateS3LogIntegrationInput: UpdateS3LogIntegrationInput;
@@ -1753,7 +1774,6 @@ export type ResolversParentTypes = {
   UploadPoliciesInput: UploadPoliciesInput;
   UploadPoliciesResponse: UploadPoliciesResponse;
   ModifyGlobalPythonModuleInput: ModifyGlobalPythonModuleInput;
-  TestPolicyRecordFunctions: TestPolicyRecordFunctions;
   AccountTypeEnum: AccountTypeEnum;
 };
 
@@ -2893,6 +2913,18 @@ export type SqsLogSourceIntegrationResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType>;
 };
 
+export type TestPolicyRecordResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['TestPolicyRecord'] = ResolversParentTypes['TestPolicyRecord']
+> = {
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  passed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  functions?: Resolver<ResolversTypes['TestPolicyRecordFunctions'], ParentType, ContextType>;
+  error?: Resolver<Maybe<ResolversTypes['Error']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>;
+};
+
 export type TestPolicyRecordFunctionsResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['TestPolicyRecordFunctions'] = ResolversParentTypes['TestPolicyRecordFunctions']
@@ -2905,13 +2937,24 @@ export type TestPolicyResponseResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['TestPolicyResponse'] = ResolversParentTypes['TestPolicyResponse']
 > = {
-  records?: Resolver<Array<ResolversTypes['TestRecord']>, ParentType, ContextType>;
+  results?: Resolver<Array<ResolversTypes['TestPolicyRecord']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType>;
 };
 
 export type TestRecordResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['TestRecord'] = ResolversParentTypes['TestRecord']
+> = {
+  __resolveType: TypeResolveFn<'TestPolicyRecord' | 'TestRuleRecord', ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  passed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  error?: Resolver<Maybe<ResolversTypes['Error']>, ParentType, ContextType>;
+};
+
+export type TestRuleRecordResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['TestRuleRecord'] = ResolversParentTypes['TestRuleRecord']
 > = {
   id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2935,7 +2978,7 @@ export type TestRuleResponseResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['TestRuleResponse'] = ResolversParentTypes['TestRuleResponse']
 > = {
-  results?: Resolver<Array<ResolversTypes['TestRecord']>, ParentType, ContextType>;
+  results?: Resolver<Array<ResolversTypes['TestRuleRecord']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType>;
 };
 
@@ -3041,9 +3084,11 @@ export type Resolvers<ContextType = any> = {
   SqsDestinationConfig?: SqsDestinationConfigResolvers<ContextType>;
   SqsLogIntegrationHealth?: SqsLogIntegrationHealthResolvers<ContextType>;
   SqsLogSourceIntegration?: SqsLogSourceIntegrationResolvers<ContextType>;
+  TestPolicyRecord?: TestPolicyRecordResolvers<ContextType>;
   TestPolicyRecordFunctions?: TestPolicyRecordFunctionsResolvers<ContextType>;
   TestPolicyResponse?: TestPolicyResponseResolvers<ContextType>;
-  TestRecord?: TestRecordResolvers<ContextType>;
+  TestRecord?: TestRecordResolvers;
+  TestRuleRecord?: TestRuleRecordResolvers<ContextType>;
   TestRuleRecordFunctions?: TestRuleRecordFunctionsResolvers<ContextType>;
   TestRuleResponse?: TestRuleResponseResolvers<ContextType>;
   TestRuleSubRecord?: TestRuleSubRecordResolvers<ContextType>;

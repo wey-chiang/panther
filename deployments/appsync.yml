@@ -1890,27 +1890,27 @@ Resources:
           #set ($testBreakdown = $util.parseJson($ctx.result.body))
           #set ($payload = [])
 
-          #foreach($testname in $testBreakdown.testsPassed)
+          #foreach($testName in $testBreakdown.testsPassed)
             #set ($payloadItem = {})
             $util.qr($payloadItem.put("id", "passed-$foreach.index"))
             $util.qr($payloadItem.put("name", $testName))
             $util.qr($payloadItem.put("passed", true))
             $util.qr($payloadItem.put("functions", {
               "policyFunction": {
-                { "output": $ctx.args.input.tests[$foreach.index].expectedResult }
+                "output": $ctx.args.input.tests[$foreach.index].expectedResult
               }
             }))
             $util.qr($payload.add($payloadItem))
           #end
 
-          #foreach($testname in $testBreakdown.testsFailed)
+          #foreach($testName in $testBreakdown.testsFailed)
             #set ($payloadItem = {})
             $util.qr($payloadItem.put("id", "failed-$foreach.index"))
             $util.qr($payloadItem.put("name", $testName))
             $util.qr($payloadItem.put("passed", false))
             $util.qr($payloadItem.put("functions", {
               "policyFunction": {
-                { "output": $ctx.args.input.tests[$foreach.index].expectedResult }
+                "output": $ctx.args.input.tests[$foreach.index].expectedResult
               }
             }))
             $util.qr($payload.add($payloadItem))
@@ -1979,15 +1979,23 @@ Resources:
               $util.qr($payloadItem.functions.ruleFunction.put("error", { "message": $resultItem.ruleError }))
             #end
 
-        	#if ($resultItem.titleOutput)
-              $util.qr($payloadItem.functions.put("titleFunction", { "output": $resultItem.titleOutput }))
+        	#if ($resultItem.titleOutput || $resultItem.titleError)
+              $util.qr($payloadItem.functions.put("titleFunction", {}))
+
+              #if ($resultItem.titleOutput)
+              	$util.qr($payloadItem.functions.titleFunction.put("output", $resultItem.titleOutput))
+              #end
               #if ($resultItem.titleError)
                 $util.qr($payloadItem.functions.titleFunction.put("error", { "message": $resultItem.titleError }))
               #end
             #end
 
-            #if ($resultItem.dedupOutput)
-              $util.qr($payloadItem.functions.put("dedupFunction", { "output": $resultItem.dedupOutput }))
+        	#if ($resultItem.dedupOutput || $resultItem.dedupError)
+              $util.qr($payloadItem.functions.put("dedupFunction", {}))
+
+              #if ($resultItem.dedupOutput)
+              	$util.qr($payloadItem.functions.dedupFunction.put("output", $resultItem.dedupOutput))
+              #end
               #if ($resultItem.dedupError)
                 $util.qr($payloadItem.functions.dedupFunction.put("error", { "message": $resultItem.dedupError }))
               #end

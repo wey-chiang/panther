@@ -22,6 +22,7 @@ import urls from 'Source/urls';
 import FadeInTrail from 'Components/utils/FadeInTrail';
 import { AlertStatusesEnum } from 'Generated/schema';
 import { useListAvailableLogTypes } from 'Source/graphql/queries/listAvailableLogTypes.generated';
+import { useListAvailableDestinationsBasic } from 'Source/graphql/queries/listAvailableDestinationsBasic.generated';
 import NavLink from '../NavLink';
 
 const LogAnalysisNavigation: React.FC = () => {
@@ -29,8 +30,10 @@ const LogAnalysisNavigation: React.FC = () => {
   // menu was opened. This is because they are used everywhere, from the overview page, to the rule
   // creation page, to the list rules page. As an optimization, prefetch the list of the available
   // log types names as soon as the log analysis menu is opened. We also want it to be "passive" so
-  // it should fail silently
+  // it should fail silently.
+  // The same logic applies to available destinations
   useListAvailableLogTypes();
+  useListAvailableDestinationsBasic();
 
   return (
     <Box>

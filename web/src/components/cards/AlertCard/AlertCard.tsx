@@ -27,6 +27,7 @@ import { AlertSummaryFull } from 'Source/graphql/fragments/AlertSummaryFull.gene
 import { formatDatetime } from 'Helpers/utils';
 import BulletedLogType from 'Components/BulletedLogType';
 import UpdateAlertDropdown from '../../dropdowns/UpdateAlertDropdown';
+import AlertDestinationsSection from './AlertDestinationsSection';
 
 interface AlertCardProps {
   alert: AlertSummaryFull;
@@ -60,8 +61,12 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
           />
 
           <GenericItemCard.Value
-            label="Events"
-            value={alert?.eventsMatched ? alert?.eventsMatched.toLocaleString() : '0'}
+            label="Destinations"
+            value={
+              <Flex align="center" spacing={2} mt={1}>
+                <AlertDestinationsSection deliveryResponses={alert.deliveryResponses} />
+              </Flex>
+            }
           />
           <GenericItemCard.Value
             label="Log Types"
@@ -72,6 +77,10 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
                 ))}
               </Flex>
             }
+          />
+          <GenericItemCard.Value
+            label="Events"
+            value={alert?.eventsMatched ? alert?.eventsMatched.toLocaleString() : '0'}
           />
           <GenericItemCard.Value label="Time Created" value={formatDatetime(alert.creationTime)} />
           <Flex ml="auto" mr={0} align="flex-end" spacing={2}>

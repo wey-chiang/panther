@@ -499,7 +499,7 @@ Resources:
         Tick: # This drives polling by the log processor
           Type: Schedule
           Properties:
-            Schedule: rate(1 minute)
+            Schedule: rate(1 minute) # NOTE: CloudWatch does not support sub-minute timers. We might want to get around this with Step Functions.
             Input: '{"tick": true}'
       Tracing: !If [TracingEnabled, !Ref TracingMode, !Ref 'AWS::NoValue']
       Policies:

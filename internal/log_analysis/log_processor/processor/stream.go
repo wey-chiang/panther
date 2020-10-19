@@ -40,9 +40,10 @@ import (
 )
 
 const (
-	processingMaxLambdaInvoke  = 2    // this limits how many lambdas can be invoked at once to cap rate of scaling
-	processingMaxFilesLimit    = 5000 // limit this so there is time to delete from the queue at the end
-	processingTimeLimitDivisor = 2    // the processing runtime should be shorter than lambda timeout to make room to flush buffers
+	processingMinGradientThreshold = 0.05 // the rate of change in the SQS queue must be at last this to trigger a gradient-based change
+	processingMaxLambdaInvoke      = 1    // this limits how many lambdas can be invoked at once to cap rate of scaling
+	processingMaxFilesLimit        = 5000 // limit this so there is time to delete from the queue at the end
+	processingTimeLimitDivisor     = 2    // the processing runtime should be shorter than lambda timeout to make room to flush buffers
 
 	sqsMaxBatchSize = 10 // max messages per read for SQS (can't find an sqs constant to refer to)
 )
@@ -154,8 +155,8 @@ func streamEvents(
 			}
 		}
 
-		// if the slope of the change in event q is strictly positive, then rescale relative to the change (gradient ascent)
-		if initialTotalQueuedMessages < lastTotalQueuedMessages {
+		// if the slope of the change in event q is enough, then rescale relative to the change (gradient ascent)
+		if positiveGradientThreshold(initialTotalQueuedMessages, lastTotalQueuedMessages) {
 			processingScaleUp(lambdaClient, (lastTotalQueuedMessages-initialTotalQueuedMessages)/processingMaxFilesLimit)
 		}
 		// this works to reduce the dc bias in the event q curve
@@ -183,6 +184,12 @@ func streamEvents(
 func processingDeadlineTime(deadlineTime time.Time) time.Time {
 	// NOTE: time.Since(deadlineTime) will be negative since the deadline is in the future!
 	return deadlineTime.Add(time.Since(deadlineTime) / processingTimeLimitDivisor)
+}
+
+// positiveGradientThreshold returns true when the rate of positive change in the sqs q events is enough to trigger scaling
+func positiveGradientThreshold(initialTotalQueuedMessages, lastTotalQueuedMessages int) bool {
+	return lastTotalQueuedMessages > processingMaxFilesLimit && // use processingMaxFilesLimit to avoid close to 0 numbers
+		float64(lastTotalQueuedMessages-initialTotalQueuedMessages)/float64(lastTotalQueuedMessages) >= processingMinGradientThreshold
 }
 
 // processingScaleUp will execute nLambdas to take on more load

@@ -19,8 +19,6 @@ package api
  */
 
 import (
-	"fmt"
-
 	"github.com/panther-labs/panther/api/lambda/alerts/models"
 	"github.com/panther-labs/panther/internal/log_analysis/alerts_api/utils"
 	"github.com/panther-labs/panther/pkg/gatewayapi"
@@ -43,10 +41,6 @@ func (API) UpdateAlertStatus(input *models.UpdateAlertStatusInput) (results mode
 	results = utils.AlertItemsToSummaries(alertItems)
 
 	for _, result := range results {
-		fmt.Println("alertId:", *result.AlertID)
-		fmt.Println("status:", result.Status)
-		fmt.Println("LastUpdatedBy:", result.LastUpdatedBy)
-		fmt.Println("LastUpdatedByTime:", result.LastUpdatedByTime)
 		gatewayapi.ReplaceMapSliceNils(result)
 	}
 	return results, nil

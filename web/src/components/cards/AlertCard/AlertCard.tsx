@@ -26,6 +26,8 @@ import LinkButton from 'Components/buttons/LinkButton';
 import { AlertSummaryFull } from 'Source/graphql/fragments/AlertSummaryFull.generated';
 import { formatDatetime } from 'Helpers/utils';
 import BulletedLogType from 'Components/BulletedLogType';
+import useAlertDestinations from 'Hooks/useAlertDestinations';
+import { useListDestinations } from 'Pages/AlertDetails';
 import UpdateAlertDropdown from '../../dropdowns/UpdateAlertDropdown';
 import AlertDestinationsSection from './AlertDestinationsSection';
 
@@ -34,6 +36,13 @@ interface AlertCardProps {
 }
 
 const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
+  const { data: destinationData } = useListDestinations();
+
+  const { alertDestinations } = useAlertDestinations({
+    destinations: destinationData?.destinations,
+    alert,
+  });
+
   return (
     <GenericItemCard>
       <GenericItemCard.Body>
@@ -62,11 +71,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
 
           <GenericItemCard.Value
             label="Destinations"
-            value={
-              <Flex align="center" spacing={2} mt={1}>
-                <AlertDestinationsSection deliveryResponses={alert.deliveryResponses} />
-              </Flex>
-            }
+            value={<AlertDestinationsSection alertDestinations={alertDestinations} />}
           />
           <GenericItemCard.Value
             label="Log Types"

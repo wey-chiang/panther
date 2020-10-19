@@ -22,7 +22,7 @@ import urls from 'Source/urls';
 import FadeInTrail from 'Components/utils/FadeInTrail';
 import { AlertStatusesEnum } from 'Generated/schema';
 import { useListAvailableLogTypes } from 'Source/graphql/queries/listAvailableLogTypes.generated';
-import { useListAvailableDestinationsBasic } from 'Source/graphql/queries/listAvailableDestinationsBasic.generated';
+import { useListDestinations } from 'Pages/AlertDetails';
 import NavLink from '../NavLink';
 
 const LogAnalysisNavigation: React.FC = () => {
@@ -33,7 +33,7 @@ const LogAnalysisNavigation: React.FC = () => {
   // it should fail silently.
   // The same logic applies to available destinations
   useListAvailableLogTypes();
-  useListAvailableDestinationsBasic();
+  useListDestinations();
 
   return (
     <Box>

@@ -17,72 +17,74 @@
  */
 
 import React from 'react';
-import groupBy from 'lodash/groupBy';
 import uniqBy from 'lodash/uniqBy';
 import sortBy from 'lodash/sortBy';
-import { Icon, Text, Tooltip } from 'pouncejs';
+import { Flex, Img, Text } from 'pouncejs';
 import { DESTINATIONS } from 'Source/constants';
 import GenericItemCard from 'Components/GenericItemCard';
-import { useListAvailableDestinationsBasic } from 'Source/graphql/queries/listAvailableDestinationsBasic.generated';
-import { DeliveryResponse } from 'Generated/schema';
+import { Destination } from 'Generated/schema';
 
 const getLogo = ({ outputType, outputId }) => {
   const { logo } = DESTINATIONS[outputType];
   return <GenericItemCard.Logo key={outputId} src={logo} />;
 };
 
+type AlertDestinations = Pick<Destination, 'outputType' | 'outputId' | 'displayName'>[];
+
 interface AlertDestinationsSectionProps {
-  deliveryResponses: DeliveryResponse[];
+  alertDestinations: AlertDestinations;
+  verbose?: boolean;
 }
 const AlertDestinationsSection: React.FC<AlertDestinationsSectionProps> = ({
-  deliveryResponses,
+  alertDestinations,
+  verbose = false,
 }) => {
-  const { data: availableDestinations, loading, error } = useListAvailableDestinationsBasic();
-
-  if (loading) {
-    return null;
-  }
-
-  if (error) {
+  // If component is verbose, we should render all destinations as row with the name of destination displayed
+  if (verbose) {
     return (
-      <Tooltip content="There was a problem when trying to identify destinations for this alert">
-        <Icon type="alert-circle" size="medium" color="blue-400" />
-      </Tooltip>
+      <React.Fragment>
+        {alertDestinations.map(destination => (
+          <Flex key={destination.outputId} align="center" mb={2}>
+            <Img
+              alt={`${destination.outputType} logo`}
+              src={DESTINATIONS[destination.outputType].logo}
+              nativeWidth={18}
+              nativeHeight={18}
+              mr={2}
+            />
+            {destination.displayName}
+          </Flex>
+        ))}
+      </React.Fragment>
     );
   }
 
-  // Grouping delivery responses by destination
-  const destinationsByOutputId = groupBy(deliveryResponses, d => d.outputId);
-
-  const destinationsKeys = Object.keys(destinationsByOutputId);
-
-  const allDestinations = destinationsKeys.map(key => {
-    // Finding the outputType for each destinations
-    const { outputType } = availableDestinations.destinations.find(d => d.outputId === key);
-    return { outputId: key, outputType };
-  });
-
+  // Else we should render destinations based if they are unique, in a column without the display name
   // Identifying unique destinations by outputType
-  const uniqueDestinations = sortBy(uniqBy(allDestinations, 'outputType'), d => d.outputType);
+  const uniqueDestinations = sortBy(uniqBy(alertDestinations, 'outputType'), d => d.outputType);
 
   /*
    * Using unique destinations here so we dont render multiple logo of the same type.
    *  i.e. If an alerts has only 2 different slack destinations will render Slack logo once
    */
-  if (allDestinations.length - uniqueDestinations.length > 0) {
+  if (alertDestinations.length - uniqueDestinations.length > 0) {
     // Limiting rendered destinations logos to 3
     const renderedDestinations = uniqueDestinations.slice(0, 3);
     // Showcasing how many additional destinations exist for this alert
-    const numberOfExtraDestinations = allDestinations.length - renderedDestinations.length;
+    const numberOfExtraDestinations = alertDestinations.length - renderedDestinations.length;
     return (
-      <React.Fragment>
+      <Flex align="center" spacing={2} mt={1}>
         {renderedDestinations.map(getLogo)}
         <Text textAlign="center">{`+ ${numberOfExtraDestinations}`}</Text>
-      </React.Fragment>
+      </Flex>
     );
   }
 
-  return <React.Fragment>{allDestinations.map(getLogo)}</React.Fragment>;
+  return (
+    <Flex align="center" spacing={2} mt={1}>
+      {alertDestinations.map(getLogo)}
+    </Flex>
+  );
 };
 
 export default AlertDestinationsSection;

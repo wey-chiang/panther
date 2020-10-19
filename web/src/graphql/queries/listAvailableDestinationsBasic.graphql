@@ -1,7 +1,0 @@
-query ListAvailableDestinationsBasic {
-    destinations {
-        outputId
-        outputType
-        displayName
-    }
-}

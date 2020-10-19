@@ -195,7 +195,7 @@ const AlertDetailsInfo: React.FC<AlertDetailsInfoProps> = ({ alert, rule, alertD
               </Box>
 
               <Box id="destinations" gridColumn="3/8">
-                <AlertDestinationsSection alertDestinations={alertDestinations} verbose />
+                <AlertDestinationsSection alert={alert} verbose />
               </Box>
             </SimpleGrid>
           </Box>

@@ -19,10 +19,12 @@
 import React from 'react';
 import uniqBy from 'lodash/uniqBy';
 import sortBy from 'lodash/sortBy';
-import { Flex, Img, Text } from 'pouncejs';
+import { Flex, Img, Text, Spinner } from 'pouncejs';
 import { DESTINATIONS } from 'Source/constants';
 import GenericItemCard from 'Components/GenericItemCard';
-import { Destination } from 'Generated/schema';
+import { AlertSummary, Destination } from 'Generated/schema';
+import { useListDestinations } from 'Pages/AlertDetails';
+import useAlertDestinations from 'Hooks/useAlertDestinations';
 
 const getLogo = ({ outputType, outputId }) => {
   const { logo } = DESTINATIONS[outputType];
@@ -32,13 +34,24 @@ const getLogo = ({ outputType, outputId }) => {
 type AlertDestinations = Pick<Destination, 'outputType' | 'outputId' | 'displayName'>[];
 
 interface AlertDestinationsSectionProps {
-  alertDestinations: AlertDestinations;
+  alert: AlertSummary;
   verbose?: boolean;
 }
 const AlertDestinationsSection: React.FC<AlertDestinationsSectionProps> = ({
-  alertDestinations,
+  alert,
   verbose = false,
 }) => {
+  const { data: destinationData, loading } = useListDestinations();
+
+  const { alertDestinations } = useAlertDestinations({
+    destinations: destinationData?.destinations,
+    alert,
+  });
+
+  if (loading) {
+    return <Spinner size="small" mr={2} />;
+  }
+
   // If component is verbose, we should render all destinations as row with the name of destination displayed
   if (verbose) {
     return (

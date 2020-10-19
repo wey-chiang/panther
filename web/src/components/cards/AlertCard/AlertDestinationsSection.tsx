@@ -22,7 +22,7 @@ import sortBy from 'lodash/sortBy';
 import { Flex, Img, Text, Spinner } from 'pouncejs';
 import { DESTINATIONS } from 'Source/constants';
 import GenericItemCard from 'Components/GenericItemCard';
-import { AlertSummary, Destination } from 'Generated/schema';
+import { AlertSummary } from 'Generated/schema';
 import { useListDestinations } from 'Pages/AlertDetails';
 import useAlertDestinations from 'Hooks/useAlertDestinations';
 
@@ -30,8 +30,6 @@ const getLogo = ({ outputType, outputId }) => {
   const { logo } = DESTINATIONS[outputType];
   return <GenericItemCard.Logo key={outputId} src={logo} />;
 };
-
-type AlertDestinations = Pick<Destination, 'outputType' | 'outputId' | 'displayName'>[];
 
 interface AlertDestinationsSectionProps {
   alert: AlertSummary;

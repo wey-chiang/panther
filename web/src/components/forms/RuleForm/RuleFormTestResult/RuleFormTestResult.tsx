@@ -30,6 +30,7 @@ const RuleFormTestResult: React.FC<RuleFormTestResultProps> = ({ testResult }) =
     functions: { ruleFunction, dedupFunction, titleFunction },
     passed,
     name,
+    error: unknownError,
   } = testResult;
 
   return (
@@ -40,59 +41,65 @@ const RuleFormTestResult: React.FC<RuleFormTestResultProps> = ({ testResult }) =
           <Heading as="h2" size="x-small" fontWeight="medium">
             {name}
           </Heading>
-          {ruleFunction.error && (
-            <Text fontSize="x-small" fontWeight="bold" color="orange-400">
-              {ruleFunction.error.message}
-            </Text>
-          )}
-          {titleFunction && (
-            <Grid
-              as="section"
-              templateColumns="max-content 1fr"
-              fontSize="medium"
-              fontWeight="medium"
-              gap={4}
-              mt={2}
-            >
-              <Box color="navyblue-100">Alert Title</Box>
-              {!titleFunction.error ? (
-                <Text wordBreak="break-word">{titleFunction.output}</Text>
-              ) : (
-                <Text
-                  fontSize="x-small"
-                  fontWeight="bold"
-                  color="orange-400"
-                  wordBreak="break-word"
-                >
-                  {titleFunction.error.message}
+          <Grid
+            as="dl"
+            wordBreak="break-word"
+            templateColumns="max-content 1fr"
+            fontSize="medium"
+            fontWeight="medium"
+            columnGap={4}
+            rowGap={2}
+            mt={2}
+          >
+            {unknownError && (
+              <React.Fragment>
+                <Box as="dt" color="navyblue-100">
+                  Unknown Error
+                </Box>
+                <Text as="dd" color="red-200">
+                  {unknownError.message}
                 </Text>
-              )}
-            </Grid>
-          )}
-          {dedupFunction && (
-            <Grid
-              as="section"
-              templateColumns="max-content 1fr"
-              fontSize="medium"
-              fontWeight="medium"
-              gap={4}
-              mt={2}
-            >
-              <Box color="navyblue-100">Dedup String</Box>
-              {!dedupFunction.error ? (
-                <Text wordBreak="break-word">{dedupFunction.output}</Text>
-              ) : (
-                <Text
-                  fontSize="x-small"
-                  fontWeight="bold"
-                  color="orange-400"
-                  wordBreak="break-word"
-                >
-                  {titleFunction.error.message}
+              </React.Fragment>
+            )}
+            {ruleFunction?.error && (
+              <React.Fragment>
+                <Box as="dt" color="navyblue-100">
+                  Rule Body
+                </Box>
+                <Text as="dd" color="red-200">
+                  {ruleFunction.error.message}
                 </Text>
-              )}
-            </Grid>
-          )}
+              </React.Fragment>
+            )}
+            {titleFunction && (
+              <React.Fragment>
+                <Box as="dt" color="navyblue-100">
+                  Alert Title
+                </Box>
+                {!titleFunction.error ? (
+                  <Text as="dd">{titleFunction.output}</Text>
+                ) : (
+                  <Text as="dd" color="red-200">
+                    {titleFunction.error.message}
+                  </Text>
+                )}
+              </React.Fragment>
+            )}
+            {dedupFunction && (
+              <React.Fragment>
+                <Box as="dt" color="navyblue-100">
+                  Dedup String
+                </Box>
+                {!dedupFunction.error ? (
+                  <Text as="dd">{dedupFunction.output}</Text>
+                ) : (
+                  <Text as="dd" color="red-200">
+                    {dedupFunction.error.message}
+                  </Text>
+                )}
+              </React.Fragment>
+            )}
+          </Grid>
         </Box>
       </Flex>
     </Card>

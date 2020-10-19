@@ -41,9 +41,14 @@ const PolicyFormTestResult: React.FC<PolicyFormTestResultProps> = ({ testResult 
             {name}
           </Heading>
           {policyFunction.error && (
-            <Text fontSize="x-small" fontWeight="bold" color="orange-400">
-              {policyFunction.error.message}
-            </Text>
+            <React.Fragment>
+              <Box as="dt" color="navyblue-100">
+                Policy Body
+              </Box>
+              <Text as="dd" color="red-200">
+                {policyFunction.error.message}
+              </Text>
+            </React.Fragment>
           )}
         </Box>
       </Flex>

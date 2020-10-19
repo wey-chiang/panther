@@ -932,17 +932,6 @@ type UploadPoliciesResponse {
   modifiedGlobals: Int
 }
 
-type PolicyUnitTestError {
-  name: String
-  errorMessage: String
-}
-
-type TestPolicyResponse {
-  testsPassed: [String!]! # List of test names that passed
-  testsFailed: [String!]! # List of test names that failed
-  testsErrored: [PolicyUnitTestError!]! # List of test names that raised an error along with the message
-}
-
 type Error {
   code: String
   message: String!
@@ -953,22 +942,30 @@ type TestRuleSubRecord {
   error: Error
 }
 
+type TestRecord {
+  id: String!
+  name: String!
+  passed: Boolean!
+  functions: TestRuleRecordFunctions!
+  error: Error
+}
+
+type TestPolicyRecordFunctions {
+  policyFunction: TestRuleSubRecord!
+}
+
+type TestPolicyResponse {
+  records: [TestRecord!]!
+}
+
 type TestRuleRecordFunctions {
   ruleFunction: TestRuleSubRecord!
   titleFunction: TestRuleSubRecord
   dedupFunction: TestRuleSubRecord
 }
 
-type TestRuleRecord {
-  id: String!
-  name: String!
-  passed: Boolean!
-  error: Error
-  functions: TestRuleRecordFunctions!
-}
-
 type TestRuleResponse {
-  results: [TestRuleRecord!]!
+  results: [TestRecord!]!
 }
 
 type ResourceSummary {

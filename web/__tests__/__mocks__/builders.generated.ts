@@ -94,7 +94,6 @@ import {
   PolicyDetails,
   PolicySummary,
   PolicyUnitTest,
-  PolicyUnitTestError,
   PolicyUnitTestInput,
   RemediateResourceInput,
   ResourceDetails,
@@ -122,9 +121,10 @@ import {
   SqsLogSourceIntegration,
   SuppressPoliciesInput,
   TestPolicyInput,
+  TestPolicyRecordFunctions,
   TestPolicyResponse,
+  TestRecord,
   TestRuleInput,
-  TestRuleRecord,
   TestRuleRecordFunctions,
   TestRuleResponse,
   TestRuleSubRecord,
@@ -1107,16 +1107,6 @@ export const buildPolicyUnitTest = (overrides: Partial<PolicyUnitTest> = {}): Po
   };
 };
 
-export const buildPolicyUnitTestError = (
-  overrides: Partial<PolicyUnitTestError> = {}
-): PolicyUnitTestError => {
-  return {
-    __typename: 'PolicyUnitTestError',
-    name: 'name' in overrides ? overrides.name : 'override',
-    errorMessage: 'errorMessage' in overrides ? overrides.errorMessage : 'Frozen',
-  };
-};
-
 export const buildPolicyUnitTestInput = (
   overrides: Partial<PolicyUnitTestInput> = {}
 ): PolicyUnitTestInput => {
@@ -1443,15 +1433,33 @@ export const buildTestPolicyInput = (overrides: Partial<TestPolicyInput> = {}): 
   };
 };
 
+export const buildTestPolicyRecordFunctions = (
+  overrides: Partial<TestPolicyRecordFunctions> = {}
+): TestPolicyRecordFunctions => {
+  return {
+    __typename: 'TestPolicyRecordFunctions',
+    policyFunction:
+      'policyFunction' in overrides ? overrides.policyFunction : buildTestRuleSubRecord(),
+  };
+};
+
 export const buildTestPolicyResponse = (
   overrides: Partial<TestPolicyResponse> = {}
 ): TestPolicyResponse => {
   return {
     __typename: 'TestPolicyResponse',
-    testsPassed: 'testsPassed' in overrides ? overrides.testsPassed : ['Producer'],
-    testsFailed: 'testsFailed' in overrides ? overrides.testsFailed : ['Granite'],
-    testsErrored:
-      'testsErrored' in overrides ? overrides.testsErrored : [buildPolicyUnitTestError()],
+    records: 'records' in overrides ? overrides.records : [buildTestRecord()],
+  };
+};
+
+export const buildTestRecord = (overrides: Partial<TestRecord> = {}): TestRecord => {
+  return {
+    __typename: 'TestRecord',
+    id: 'id' in overrides ? overrides.id : 'distributed',
+    name: 'name' in overrides ? overrides.name : 'convergence',
+    passed: 'passed' in overrides ? overrides.passed : true,
+    functions: 'functions' in overrides ? overrides.functions : buildTestRuleRecordFunctions(),
+    error: 'error' in overrides ? overrides.error : buildError(),
   };
 };
 
@@ -1460,17 +1468,6 @@ export const buildTestRuleInput = (overrides: Partial<TestRuleInput> = {}): Test
     body: 'body' in overrides ? overrides.body : 'Steel',
     logTypes: 'logTypes' in overrides ? overrides.logTypes : ['project'],
     tests: 'tests' in overrides ? overrides.tests : [buildPolicyUnitTestInput()],
-  };
-};
-
-export const buildTestRuleRecord = (overrides: Partial<TestRuleRecord> = {}): TestRuleRecord => {
-  return {
-    __typename: 'TestRuleRecord',
-    id: 'id' in overrides ? overrides.id : 'Oklahoma',
-    name: 'name' in overrides ? overrides.name : 'Pants',
-    passed: 'passed' in overrides ? overrides.passed : true,
-    error: 'error' in overrides ? overrides.error : buildError(),
-    functions: 'functions' in overrides ? overrides.functions : buildTestRuleRecordFunctions(),
   };
 };
 
@@ -1492,7 +1489,7 @@ export const buildTestRuleResponse = (
 ): TestRuleResponse => {
   return {
     __typename: 'TestRuleResponse',
-    results: 'results' in overrides ? overrides.results : [buildTestRuleRecord()],
+    results: 'results' in overrides ? overrides.results : [buildTestRecord()],
   };
 };
 

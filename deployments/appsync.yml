@@ -1887,7 +1887,52 @@ Resources:
       ResponseMappingTemplate: |
         #set ($statusCode = $ctx.result.statusCode)
         #if($statusCode == 200)
-            $ctx.result.body
+          #set ($testBreakdown = $util.parseJson($ctx.result.body))
+          #set ($payload = [])
+
+          #foreach($testname in $testBreakdown.testsPassed)
+            #set ($payloadItem = {})
+            $util.qr($payloadItem.put("id", "passed-$foreach.index"))
+            $util.qr($payloadItem.put("name", $testName))
+            $util.qr($payloadItem.put("passed", true))
+            $util.qr($payloadItem.put("functions", {
+              "policyFunction": {
+                { "output": $ctx.args.input.tests[$foreach.index].expectedResult }
+              }
+            }))
+            $util.qr($payload.add($payloadItem))
+          #end
+
+          #foreach($testname in $testBreakdown.testsFailed)
+            #set ($payloadItem = {})
+            $util.qr($payloadItem.put("id", "failed-$foreach.index"))
+            $util.qr($payloadItem.put("name", $testName))
+            $util.qr($payloadItem.put("passed", false))
+            $util.qr($payloadItem.put("functions", {
+              "policyFunction": {
+                { "output": $ctx.args.input.tests[$foreach.index].expectedResult }
+              }
+            }))
+            $util.qr($payload.add($payloadItem))
+          #end
+
+          #foreach($test in $testBreakdown.testsErrored)
+            #set ($payloadItem = {})
+            $util.qr($payloadItem.put("id", "errored-$foreach.index"))
+            $util.qr($payloadItem.put("name", $test.name))
+            $util.qr($payloadItem.put("passed", false))
+            $util.qr($payloadItem.put("functions", {
+              "policyFunction": {
+                "output": $ctx.args.input.tests[$foreach.index].expectedResult,
+                "error": {
+                  "message": $test.errorMessage
+                }
+              }
+            }))
+            $util.qr($payload.add($payloadItem))
+          #end
+
+          $util.toJson({ "results": $payload })
         #elseif($statusCode >= 400 && $statusCode < 500)
             $util.error($util.parseJson($ctx.result.body).message, "$statusCode", $input)
         #else

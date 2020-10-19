@@ -1251,6 +1251,7 @@ export type TestRuleRecord = {
 
 export type TestRuleRecordFunctions = {
   __typename?: 'TestRuleRecordFunctions';
+  ruleFunction: TestRuleSubRecord;
   titleFunction?: Maybe<TestRuleSubRecord>;
   dedupFunction?: Maybe<TestRuleSubRecord>;
 };
@@ -2930,6 +2931,7 @@ export type TestRuleRecordFunctionsResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['TestRuleRecordFunctions'] = ResolversParentTypes['TestRuleRecordFunctions']
 > = {
+  ruleFunction?: Resolver<ResolversTypes['TestRuleSubRecord'], ParentType, ContextType>;
   titleFunction?: Resolver<Maybe<ResolversTypes['TestRuleSubRecord']>, ParentType, ContextType>;
   dedupFunction?: Resolver<Maybe<ResolversTypes['TestRuleSubRecord']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType>;

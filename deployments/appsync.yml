@@ -1927,24 +1927,27 @@ Resources:
             $util.qr($payloadItem.put("id", $resultItem.id))
             $util.qr($payloadItem.put("name", $resultItem.testName))
             $util.qr($payloadItem.put("passed", $util.defaultIfNull($resultItem.matched, false)))
+            $util.qr($payloadItem.put("functions", {}))
+
+            $util.qr($payloadItem.functions.put("ruleFunction", { "output": $ctx.args.input.tests[$foreach.index].expectedResult }))
+            #if ($resultItem.ruleError)
+              $util.qr($payloadItem.functions.ruleFunction.put("error", { "message": $resultItem.ruleError }))
+            #end
 
         	#if ($resultItem.titleOutput)
-              $util.qr($payloadItem.put("titleFunction", { "output": $resultItem.titleOutput }))
+              $util.qr($payloadItem.functions.put("titleFunction", { "output": $resultItem.titleOutput }))
               #if ($resultItem.titleError)
-                $util.qr($payloadItem.titleFunction.put("error", { "message": $resultItem.titleError }))
+                $util.qr($payloadItem.functions.titleFunction.put("error", { "message": $resultItem.titleError }))
               #end
             #end
 
             #if ($resultItem.dedupOutput)
-              $util.qr($payloadItem.put("dedupFunction", { "output": $resultItem.dedupOutput }))
+              $util.qr($payloadItem.functions.put("dedupFunction", { "output": $resultItem.dedupOutput }))
               #if ($resultItem.dedupError)
-                $util.qr($payloadItem.dedupFunction.put("error", { "message": $resultItem.dedupError }))
+                $util.qr($payloadItem.functions.dedupFunction.put("error", { "message": $resultItem.dedupError }))
               #end
             #end
 
-            #if ($resultItem.ruleError)
-              $util.qr($payloadItem.put("error", { "message": $resultItem.ruleError }))
-            #end
             #if ($resultItem.genericError)
               $util.qr($payloadItem.put("error", { "message": $resultItem.genericError }))
             #end

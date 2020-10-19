@@ -1479,6 +1479,7 @@ export const buildTestRuleRecordFunctions = (
 ): TestRuleRecordFunctions => {
   return {
     __typename: 'TestRuleRecordFunctions',
+    ruleFunction: 'ruleFunction' in overrides ? overrides.ruleFunction : buildTestRuleSubRecord(),
     titleFunction:
       'titleFunction' in overrides ? overrides.titleFunction : buildTestRuleSubRecord(),
     dedupFunction:

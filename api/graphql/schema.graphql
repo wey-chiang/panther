@@ -246,7 +246,7 @@ input AddRuleInput {
   runbook: String
   severity: SeverityEnum!
   tags: [String]
-  tests: [PolicyUnitTestInput] # Rule and Policy share the same tests structure
+  tests: [DetectionTestDefinitionInput] # Rule and Policy share the same tests structure
 }
 
 input UpdateRuleInput {
@@ -263,7 +263,7 @@ input UpdateRuleInput {
   runbook: String
   severity: SeverityEnum
   tags: [String]
-  tests: [PolicyUnitTestInput] # Rule and Policy share the same tests structure
+  tests: [DetectionTestDefinitionInput] # Rule and Policy share the same tests structure
 }
 
 input GetRuleInput {
@@ -314,7 +314,7 @@ type RuleDetails {
   runbook: String
   severity: SeverityEnum
   tags: [String]
-  tests: [PolicyUnitTest] # Policy and Rule have the same tests structure so we reuse the struct here
+  tests: [DetectionTestDefinition] # Policy and Rule have the same tests structure so we reuse the struct here
   versionId: ID
 }
 
@@ -459,13 +459,13 @@ type GeneralSettings {
 input TestPolicyInput {
   body: String!
   resourceTypes: [String!]!
-  tests: [PolicyUnitTestInput!]!
+  tests: [DetectionTestDefinitionInput!]!
 }
 
 input TestRuleInput {
   body: String!
   logTypes: [String!]!
-  tests: [PolicyUnitTestInput!]!
+  tests: [DetectionTestDefinitionInput!]!
 }
 
 type SqsConfig {
@@ -736,7 +736,7 @@ type PolicyDetails {
   severity: SeverityEnum
   suppressions: [String]
   tags: [String]
-  tests: [PolicyUnitTest]
+  tests: [DetectionTestDefinition]
   versionId: ID
 }
 
@@ -788,7 +788,7 @@ input AddPolicyInput {
   severity: SeverityEnum!
   suppressions: [String]
   tags: [String]
-  tests: [PolicyUnitTestInput]
+  tests: [DetectionTestDefinitionInput]
 }
 
 input UpdatePolicyInput {
@@ -806,7 +806,7 @@ input UpdatePolicyInput {
   severity: SeverityEnum
   suppressions: [String]
   tags: [String]
-  tests: [PolicyUnitTestInput]
+  tests: [DetectionTestDefinitionInput]
 }
 
 input GetPolicyInput {
@@ -901,13 +901,13 @@ input RemediateResourceInput {
   resourceId: ID!
 }
 
-type PolicyUnitTest {
+type DetectionTestDefinition {
   expectedResult: Boolean
   name: String
   resource: String # The `attributes` field of the Resource in stringified JSON format
 }
 
-input PolicyUnitTestInput {
+input DetectionTestDefinitionInput {
   expectedResult: Boolean
   name: String
   resource: String # The `attributes` field of the Resource in stringified JSON format

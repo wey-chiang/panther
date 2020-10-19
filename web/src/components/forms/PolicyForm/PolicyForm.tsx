@@ -17,7 +17,7 @@
  */
 
 import React from 'react';
-import { AddPolicyInput, PolicyUnitTest, UpdatePolicyInput } from 'Generated/schema';
+import { AddPolicyInput, DetectionTestDefinition, UpdatePolicyInput } from 'Generated/schema';
 import * as Yup from 'yup';
 import { Button, Flex } from 'pouncejs';
 import { Form, Formik } from 'formik';
@@ -37,7 +37,7 @@ const validationSchema = Yup.object().shape({
   id: Yup.string().required(),
   body: Yup.string().required(),
   severity: Yup.string().required(),
-  tests: Yup.array<PolicyUnitTest>().of(
+  tests: Yup.array<DetectionTestDefinition>().of(
     Yup.object().shape({
       name: Yup.string().required(),
       expectedResult: Yup.boolean().required(),

@@ -55,14 +55,18 @@ const RuleFormTestResult: React.FC<RuleFormTestResultProps> = ({ testResult }) =
               mt={2}
             >
               <Box color="navyblue-100">Alert Title</Box>
-              <Box wordBreak="break-word">
-                {titleFunction.output}
-                {titleFunction.error && (
-                  <Text fontSize="x-small" fontWeight="bold" color="orange-400">
-                    {titleFunction.error.message}
-                  </Text>
-                )}
-              </Box>
+              {!titleFunction.error ? (
+                <Text wordBreak="break-word">{titleFunction.output}</Text>
+              ) : (
+                <Text
+                  fontSize="x-small"
+                  fontWeight="bold"
+                  color="orange-400"
+                  wordBreak="break-word"
+                >
+                  {titleFunction.error.message}
+                </Text>
+              )}
             </Grid>
           )}
           {dedupFunction && (
@@ -75,14 +79,18 @@ const RuleFormTestResult: React.FC<RuleFormTestResultProps> = ({ testResult }) =
               mt={2}
             >
               <Box color="navyblue-100">Dedup String</Box>
-              <Box wordBreak="break-word">
-                {dedupFunction.output}
-                {dedupFunction.error && (
-                  <Text fontSize="x-small" fontWeight="bold" color="orange-400">
-                    {dedupFunction.error.message}
-                  </Text>
-                )}
-              </Box>
+              {!dedupFunction.error ? (
+                <Text wordBreak="break-word">{dedupFunction.output}</Text>
+              ) : (
+                <Text
+                  fontSize="x-small"
+                  fontWeight="bold"
+                  color="orange-400"
+                  wordBreak="break-word"
+                >
+                  {titleFunction.error.message}
+                </Text>
+              )}
             </Grid>
           )}
         </Box>

@@ -1276,7 +1276,7 @@ export type TestRuleResponse = {
 
 export type TestRuleSubRecord = {
   __typename?: 'TestRuleSubRecord';
-  output: Scalars['String'];
+  output?: Maybe<Scalars['String']>;
   error?: Maybe<Error>;
 };
 
@@ -2994,7 +2994,7 @@ export type TestRuleSubRecordResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['TestRuleSubRecord'] = ResolversParentTypes['TestRuleSubRecord']
 > = {
-  output?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  output?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['Error']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType>;
 };

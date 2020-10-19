@@ -938,7 +938,7 @@ type Error {
 }
 
 type TestRuleSubRecord {
-  output: String!
+  output: String
   error: Error
 }
 

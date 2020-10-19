@@ -40,7 +40,7 @@ import (
 )
 
 const (
-	processingMaxLambdaInvoke  = 3    // this limits how many lambdas can be invoked at once to cap rate of scaling
+	processingMaxLambdaInvoke  = 2    // this limits how many lambdas can be invoked at once to cap rate of scaling
 	processingMaxFilesLimit    = 5000 // limit this so there is time to delete from the queue at the end
 	processingTimeLimitDivisor = 2    // the processing runtime should be shorter than lambda timeout to make room to flush buffers
 

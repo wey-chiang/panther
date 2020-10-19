@@ -953,22 +953,17 @@ type TestRuleSubRecord {
   error: Error
 }
 
+type TestRuleRecordFunctions {
+  titleFunction: TestRuleSubRecord
+  dedupFunction: TestRuleSubRecord
+}
+
 type TestRuleRecord {
   id: String!
   name: String!
   passed: Boolean!
-  title: TestRuleSubRecord!
-  dedup: TestRuleSubRecord!
   error: Error
-
-  #  rule: TestRuleSubRecord!
-  #  ruleError: String
-  #  titleOutput: String!
-  #  titleError: String
-  #  dedupOutput: String!
-  #  dedupError: String
-  #  genericError: String # General error in the Python script (e.g. import error, indentation, etc)
-  #  errored: Boolean!
+  functions: TestRuleRecordFunctions!
 }
 
 type TestRuleResponse {

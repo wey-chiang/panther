@@ -1922,20 +1922,24 @@ Resources:
         #set ($statusCode = $ctx.result.statusCode)
         #if($statusCode == 200)
           #set ($payload = [])
-          #foreach($resultItem in $util.parseJson($ctx.result.body))
+          #foreach($resultItem in $util.parseJson($ctx.result.body).results)
             #set ($payloadItem = {})
             $util.qr($payloadItem.put("id", $resultItem.id))
             $util.qr($payloadItem.put("name", $resultItem.testName))
-            $util.qr($payloadItem.put("passed", $resultItem.matched))
+            $util.qr($payloadItem.put("passed", $util.defaultIfNull($resultItem.matched, false)))
 
-            $util.qr($payloadItem.put("title", { "output": $resultItem.titleOutput }))
-            #if ($resultItem.titleError)
-              $util.qr($payloadItem.title.put("error", { "message": $resultItem.titleError }))
+        	#if ($resultItem.titleOutput)
+              $util.qr($payloadItem.put("titleFunction", { "output": $resultItem.titleOutput }))
+              #if ($resultItem.titleError)
+                $util.qr($payloadItem.titleFunction.put("error", { "message": $resultItem.titleError }))
+              #end
             #end
 
-            $util.qr($payloadItem.put("dedup", { "output": $resultItem.dedupOutput }))
-            #if ($resultItem.dedupError)
-              $util.qr($payloadItem.dedup.put("error", { "message": $resultItem.dedupError }))
+            #if ($resultItem.dedupOutput)
+              $util.qr($payloadItem.put("dedupFunction", { "output": $resultItem.dedupOutput }))
+              #if ($resultItem.dedupError)
+                $util.qr($payloadItem.dedupFunction.put("error", { "message": $resultItem.dedupError }))
+              #end
             #end
 
             #if ($resultItem.ruleError)
@@ -1947,7 +1951,7 @@ Resources:
 
             $util.qr($payload.add($payloadItem))
           #end
-          $util.toJson($payload)
+          $util.toJson({ "results": $payload })
 
         #elseif($statusCode >= 400 && $statusCode < 500)
             $util.error($util.parseJson($ctx.result.body).message, "$statusCode", $input)

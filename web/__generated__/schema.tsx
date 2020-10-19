@@ -162,11 +162,6 @@ export type AlertSummary = Alert & {
   updateTime: Scalars['AWSDateTime'];
 };
 
-export enum AnalysisTypeEnum {
-  Rule = 'RULE',
-  Policy = 'POLICY',
-}
-
 export type AsanaConfig = {
   __typename?: 'AsanaConfig';
   personalAccessToken: Scalars['String'];
@@ -332,6 +327,12 @@ export enum DestinationTypeEnum {
   Asana = 'asana',
   Customwebhook = 'customwebhook',
 }
+
+export type Error = {
+  __typename?: 'Error';
+  code?: Maybe<Scalars['String']>;
+  message: Scalars['String'];
+};
 
 export type FloatSeries = {
   __typename?: 'FloatSeries';
@@ -630,7 +631,6 @@ export type Mutation = {
   addSqsLogIntegration: SqsLogSourceIntegration;
   addPolicy?: Maybe<PolicyDetails>;
   addRule?: Maybe<RuleDetails>;
-  testRule?: Maybe<TestRuleResponse>;
   addGlobalPythonModule: GlobalPythonModule;
   deleteDestination?: Maybe<Scalars['Boolean']>;
   deleteComplianceIntegration?: Maybe<Scalars['Boolean']>;
@@ -644,7 +644,8 @@ export type Mutation = {
   deliverAlert: AlertSummary;
   resetUserPassword: User;
   suppressPolicies?: Maybe<Scalars['Boolean']>;
-  testPolicy?: Maybe<TestPolicyResponse>;
+  testPolicy: TestPolicyResponse;
+  testRule: TestRuleResponse;
   updateAlertStatus?: Maybe<AlertSummary>;
   updateDestination?: Maybe<Destination>;
   updateComplianceIntegration: ComplianceIntegration;
@@ -680,10 +681,6 @@ export type MutationAddPolicyArgs = {
 
 export type MutationAddRuleArgs = {
   input: AddRuleInput;
-};
-
-export type MutationTestRuleArgs = {
-  input?: Maybe<TestPolicyInput>;
 };
 
 export type MutationAddGlobalPythonModuleArgs = {
@@ -739,7 +736,11 @@ export type MutationSuppressPoliciesArgs = {
 };
 
 export type MutationTestPolicyArgs = {
-  input?: Maybe<TestPolicyInput>;
+  input: TestPolicyInput;
+};
+
+export type MutationTestRuleArgs = {
+  input: TestRuleInput;
 };
 
 export type MutationUpdateAlertStatusArgs = {
@@ -1074,20 +1075,6 @@ export type RuleDetails = {
   versionId?: Maybe<Scalars['ID']>;
 };
 
-export type RuleResult = {
-  __typename?: 'RuleResult';
-  id?: Maybe<Scalars['String']>;
-  ruleId?: Maybe<Scalars['String']>;
-  matched?: Maybe<Scalars['Boolean']>;
-  ruleError?: Maybe<Scalars['String']>;
-  titleOutput?: Maybe<Scalars['String']>;
-  titleError?: Maybe<Scalars['String']>;
-  dedupOutput?: Maybe<Scalars['String']>;
-  dedupError?: Maybe<Scalars['String']>;
-  genericError?: Maybe<Scalars['String']>;
-  errored?: Maybe<Scalars['Boolean']>;
-};
-
 export type RuleSummary = {
   __typename?: 'RuleSummary';
   displayName?: Maybe<Scalars['String']>;
@@ -1235,24 +1222,48 @@ export type SuppressPoliciesInput = {
 };
 
 export type TestPolicyInput = {
-  body?: Maybe<Scalars['String']>;
-  resourceTypes?: Maybe<Array<Maybe<Scalars['String']>>>;
-  analysisType?: Maybe<AnalysisTypeEnum>;
-  tests?: Maybe<Array<PolicyUnitTestInput>>;
+  body: Scalars['String'];
+  resourceTypes: Array<Scalars['String']>;
+  tests: Array<PolicyUnitTestInput>;
 };
 
 export type TestPolicyResponse = {
   __typename?: 'TestPolicyResponse';
-  testSummary?: Maybe<Scalars['Boolean']>;
-  testsPassed?: Maybe<Array<Maybe<Scalars['String']>>>;
-  testsFailed?: Maybe<Array<Maybe<Scalars['String']>>>;
-  testsErrored?: Maybe<Array<Maybe<PolicyUnitTestError>>>;
+  testsPassed: Array<Scalars['String']>;
+  testsFailed: Array<Scalars['String']>;
+  testsErrored: Array<PolicyUnitTestError>;
+};
+
+export type TestRuleInput = {
+  body: Scalars['String'];
+  logTypes: Array<Scalars['String']>;
+  tests: Array<PolicyUnitTestInput>;
+};
+
+export type TestRuleRecord = {
+  __typename?: 'TestRuleRecord';
+  id: Scalars['String'];
+  name: Scalars['String'];
+  passed: Scalars['Boolean'];
+  error?: Maybe<Error>;
+  functions: TestRuleRecordFunctions;
+};
+
+export type TestRuleRecordFunctions = {
+  __typename?: 'TestRuleRecordFunctions';
+  titleFunction?: Maybe<TestRuleSubRecord>;
+  dedupFunction?: Maybe<TestRuleSubRecord>;
 };
 
 export type TestRuleResponse = {
   __typename?: 'TestRuleResponse';
-  testSummary?: Maybe<Scalars['Boolean']>;
-  results?: Maybe<Array<Maybe<RuleResult>>>;
+  results: Array<TestRuleRecord>;
+};
+
+export type TestRuleSubRecord = {
+  __typename?: 'TestRuleSubRecord';
+  output: Scalars['String'];
+  error?: Maybe<Error>;
 };
 
 export type UpdateAlertStatusInput = {
@@ -1563,10 +1574,6 @@ export type ResolversTypes = {
   AddPolicyInput: AddPolicyInput;
   PolicyUnitTestInput: PolicyUnitTestInput;
   AddRuleInput: AddRuleInput;
-  TestPolicyInput: TestPolicyInput;
-  AnalysisTypeEnum: AnalysisTypeEnum;
-  TestRuleResponse: ResolverTypeWrapper<TestRuleResponse>;
-  RuleResult: ResolverTypeWrapper<RuleResult>;
   AddGlobalPythonModuleInput: AddGlobalPythonModuleInput;
   DeletePolicyInput: DeletePolicyInput;
   DeletePolicyInputItem: DeletePolicyInputItem;
@@ -1578,8 +1585,15 @@ export type ResolversTypes = {
   RemediateResourceInput: RemediateResourceInput;
   DeliverAlertInput: DeliverAlertInput;
   SuppressPoliciesInput: SuppressPoliciesInput;
+  TestPolicyInput: TestPolicyInput;
   TestPolicyResponse: ResolverTypeWrapper<TestPolicyResponse>;
   PolicyUnitTestError: ResolverTypeWrapper<PolicyUnitTestError>;
+  TestRuleInput: TestRuleInput;
+  TestRuleResponse: ResolverTypeWrapper<TestRuleResponse>;
+  TestRuleRecord: ResolverTypeWrapper<TestRuleRecord>;
+  Error: ResolverTypeWrapper<Error>;
+  TestRuleRecordFunctions: ResolverTypeWrapper<TestRuleRecordFunctions>;
+  TestRuleSubRecord: ResolverTypeWrapper<TestRuleSubRecord>;
   UpdateAlertStatusInput: UpdateAlertStatusInput;
   UpdateComplianceIntegrationInput: UpdateComplianceIntegrationInput;
   UpdateS3LogIntegrationInput: UpdateS3LogIntegrationInput;
@@ -1711,10 +1725,6 @@ export type ResolversParentTypes = {
   AddPolicyInput: AddPolicyInput;
   PolicyUnitTestInput: PolicyUnitTestInput;
   AddRuleInput: AddRuleInput;
-  TestPolicyInput: TestPolicyInput;
-  AnalysisTypeEnum: AnalysisTypeEnum;
-  TestRuleResponse: TestRuleResponse;
-  RuleResult: RuleResult;
   AddGlobalPythonModuleInput: AddGlobalPythonModuleInput;
   DeletePolicyInput: DeletePolicyInput;
   DeletePolicyInputItem: DeletePolicyInputItem;
@@ -1726,8 +1736,15 @@ export type ResolversParentTypes = {
   RemediateResourceInput: RemediateResourceInput;
   DeliverAlertInput: DeliverAlertInput;
   SuppressPoliciesInput: SuppressPoliciesInput;
+  TestPolicyInput: TestPolicyInput;
   TestPolicyResponse: TestPolicyResponse;
   PolicyUnitTestError: PolicyUnitTestError;
+  TestRuleInput: TestRuleInput;
+  TestRuleResponse: TestRuleResponse;
+  TestRuleRecord: TestRuleRecord;
+  Error: Error;
+  TestRuleRecordFunctions: TestRuleRecordFunctions;
+  TestRuleSubRecord: TestRuleSubRecord;
   UpdateAlertStatusInput: UpdateAlertStatusInput;
   UpdateComplianceIntegrationInput: UpdateComplianceIntegrationInput;
   UpdateS3LogIntegrationInput: UpdateS3LogIntegrationInput;
@@ -1970,6 +1987,15 @@ export type DestinationConfigResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType>;
 };
 
+export type ErrorResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Error'] = ResolversParentTypes['Error']
+> = {
+  code?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>;
+};
+
 export type FloatSeriesResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['FloatSeries'] = ResolversParentTypes['FloatSeries']
@@ -2201,12 +2227,6 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationAddRuleArgs, 'input'>
   >;
-  testRule?: Resolver<
-    Maybe<ResolversTypes['TestRuleResponse']>,
-    ParentType,
-    ContextType,
-    RequireFields<MutationTestRuleArgs, never>
-  >;
   addGlobalPythonModule?: Resolver<
     ResolversTypes['GlobalPythonModule'],
     ParentType,
@@ -2286,10 +2306,16 @@ export type MutationResolvers<
     RequireFields<MutationSuppressPoliciesArgs, 'input'>
   >;
   testPolicy?: Resolver<
-    Maybe<ResolversTypes['TestPolicyResponse']>,
+    ResolversTypes['TestPolicyResponse'],
     ParentType,
     ContextType,
-    RequireFields<MutationTestPolicyArgs, never>
+    RequireFields<MutationTestPolicyArgs, 'input'>
+  >;
+  testRule?: Resolver<
+    ResolversTypes['TestRuleResponse'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationTestRuleArgs, 'input'>
   >;
   updateAlertStatus?: Resolver<
     Maybe<ResolversTypes['AlertSummary']>,
@@ -2706,23 +2732,6 @@ export type RuleDetailsResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType>;
 };
 
-export type RuleResultResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['RuleResult'] = ResolversParentTypes['RuleResult']
-> = {
-  id?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  ruleId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  matched?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  ruleError?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  titleOutput?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  titleError?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  dedupOutput?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  dedupError?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  genericError?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  errored?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType>;
-};
-
 export type RuleSummaryResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['RuleSummary'] = ResolversParentTypes['RuleSummary']
@@ -2899,14 +2908,30 @@ export type TestPolicyResponseResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['TestPolicyResponse'] = ResolversParentTypes['TestPolicyResponse']
 > = {
-  testSummary?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  testsPassed?: Resolver<Maybe<Array<Maybe<ResolversTypes['String']>>>, ParentType, ContextType>;
-  testsFailed?: Resolver<Maybe<Array<Maybe<ResolversTypes['String']>>>, ParentType, ContextType>;
-  testsErrored?: Resolver<
-    Maybe<Array<Maybe<ResolversTypes['PolicyUnitTestError']>>>,
-    ParentType,
-    ContextType
-  >;
+  testsPassed?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  testsFailed?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  testsErrored?: Resolver<Array<ResolversTypes['PolicyUnitTestError']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>;
+};
+
+export type TestRuleRecordResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['TestRuleRecord'] = ResolversParentTypes['TestRuleRecord']
+> = {
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  passed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  error?: Resolver<Maybe<ResolversTypes['Error']>, ParentType, ContextType>;
+  functions?: Resolver<ResolversTypes['TestRuleRecordFunctions'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>;
+};
+
+export type TestRuleRecordFunctionsResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['TestRuleRecordFunctions'] = ResolversParentTypes['TestRuleRecordFunctions']
+> = {
+  titleFunction?: Resolver<Maybe<ResolversTypes['TestRuleSubRecord']>, ParentType, ContextType>;
+  dedupFunction?: Resolver<Maybe<ResolversTypes['TestRuleSubRecord']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType>;
 };
 
@@ -2914,8 +2939,16 @@ export type TestRuleResponseResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['TestRuleResponse'] = ResolversParentTypes['TestRuleResponse']
 > = {
-  testSummary?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  results?: Resolver<Maybe<Array<Maybe<ResolversTypes['RuleResult']>>>, ParentType, ContextType>;
+  results?: Resolver<Array<ResolversTypes['TestRuleRecord']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>;
+};
+
+export type TestRuleSubRecordResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['TestRuleSubRecord'] = ResolversParentTypes['TestRuleSubRecord']
+> = {
+  output?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  error?: Resolver<Maybe<ResolversTypes['Error']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType>;
 };
 
@@ -2966,6 +2999,7 @@ export type Resolvers<ContextType = any> = {
   DeliveryResponse?: DeliveryResponseResolvers<ContextType>;
   Destination?: DestinationResolvers<ContextType>;
   DestinationConfig?: DestinationConfigResolvers<ContextType>;
+  Error?: ErrorResolvers<ContextType>;
   FloatSeries?: FloatSeriesResolvers<ContextType>;
   FloatSeriesData?: FloatSeriesDataResolvers<ContextType>;
   GeneralSettings?: GeneralSettingsResolvers<ContextType>;
@@ -2998,7 +3032,6 @@ export type Resolvers<ContextType = any> = {
   ResourceDetails?: ResourceDetailsResolvers<ContextType>;
   ResourceSummary?: ResourceSummaryResolvers<ContextType>;
   RuleDetails?: RuleDetailsResolvers<ContextType>;
-  RuleResult?: RuleResultResolvers<ContextType>;
   RuleSummary?: RuleSummaryResolvers<ContextType>;
   S3LogIntegration?: S3LogIntegrationResolvers<ContextType>;
   S3LogIntegrationHealth?: S3LogIntegrationHealthResolvers<ContextType>;
@@ -3014,7 +3047,10 @@ export type Resolvers<ContextType = any> = {
   SqsLogIntegrationHealth?: SqsLogIntegrationHealthResolvers<ContextType>;
   SqsLogSourceIntegration?: SqsLogSourceIntegrationResolvers<ContextType>;
   TestPolicyResponse?: TestPolicyResponseResolvers<ContextType>;
+  TestRuleRecord?: TestRuleRecordResolvers<ContextType>;
+  TestRuleRecordFunctions?: TestRuleRecordFunctionsResolvers<ContextType>;
   TestRuleResponse?: TestRuleResponseResolvers<ContextType>;
+  TestRuleSubRecord?: TestRuleSubRecordResolvers<ContextType>;
   UploadPoliciesResponse?: UploadPoliciesResponseResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
 };

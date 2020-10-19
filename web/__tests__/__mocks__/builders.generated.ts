@@ -46,6 +46,7 @@ import {
   DestinationConfig,
   DestinationConfigInput,
   DestinationInput,
+  Error,
   FloatSeries,
   FloatSeriesData,
   GeneralSettings,
@@ -100,7 +101,6 @@ import {
   ResourcesForPolicyInput,
   ResourceSummary,
   RuleDetails,
-  RuleResult,
   RuleSummary,
   S3LogIntegration,
   S3LogIntegrationHealth,
@@ -123,7 +123,11 @@ import {
   SuppressPoliciesInput,
   TestPolicyInput,
   TestPolicyResponse,
+  TestRuleInput,
+  TestRuleRecord,
+  TestRuleRecordFunctions,
   TestRuleResponse,
+  TestRuleSubRecord,
   UpdateAlertStatusInput,
   UpdateComplianceIntegrationInput,
   UpdateGeneralSettingsInput,
@@ -137,7 +141,6 @@ import {
   User,
   AccountTypeEnum,
   AlertStatusesEnum,
-  AnalysisTypeEnum,
   ComplianceStatusEnum,
   DestinationTypeEnum,
   ListAlertsSortFieldsEnum,
@@ -542,6 +545,14 @@ export const buildDestinationInput = (
     outputType: 'outputType' in overrides ? overrides.outputType : 'New Hampshire',
     defaultForSeverity:
       'defaultForSeverity' in overrides ? overrides.defaultForSeverity : [SeverityEnum.Critical],
+  };
+};
+
+export const buildError = (overrides: Partial<Error> = {}): Error => {
+  return {
+    __typename: 'Error',
+    code: 'code' in overrides ? overrides.code : 'navigating',
+    message: 'message' in overrides ? overrides.message : 'deposit',
   };
 };
 
@@ -1203,22 +1214,6 @@ export const buildRuleDetails = (overrides: Partial<RuleDetails> = {}): RuleDeta
   };
 };
 
-export const buildRuleResult = (overrides: Partial<RuleResult> = {}): RuleResult => {
-  return {
-    __typename: 'RuleResult',
-    id: 'id' in overrides ? overrides.id : 'Global',
-    ruleId: 'ruleId' in overrides ? overrides.ruleId : 'workforce',
-    matched: 'matched' in overrides ? overrides.matched : false,
-    ruleError: 'ruleError' in overrides ? overrides.ruleError : 'leverage',
-    titleOutput: 'titleOutput' in overrides ? overrides.titleOutput : 'Somali Shilling',
-    titleError: 'titleError' in overrides ? overrides.titleError : 'Aruban Guilder',
-    dedupOutput: 'dedupOutput' in overrides ? overrides.dedupOutput : 'Plastic',
-    dedupError: 'dedupError' in overrides ? overrides.dedupError : 'synergies',
-    genericError: 'genericError' in overrides ? overrides.genericError : 'Inverse',
-    errored: 'errored' in overrides ? overrides.errored : true,
-  };
-};
-
 export const buildRuleSummary = (overrides: Partial<RuleSummary> = {}): RuleSummary => {
   return {
     __typename: 'RuleSummary',
@@ -1444,7 +1439,6 @@ export const buildTestPolicyInput = (overrides: Partial<TestPolicyInput> = {}): 
   return {
     body: 'body' in overrides ? overrides.body : 'Centralized',
     resourceTypes: 'resourceTypes' in overrides ? overrides.resourceTypes : ['Automotive'],
-    analysisType: 'analysisType' in overrides ? overrides.analysisType : AnalysisTypeEnum.Rule,
     tests: 'tests' in overrides ? overrides.tests : [buildPolicyUnitTestInput()],
   };
 };
@@ -1454,11 +1448,41 @@ export const buildTestPolicyResponse = (
 ): TestPolicyResponse => {
   return {
     __typename: 'TestPolicyResponse',
-    testSummary: 'testSummary' in overrides ? overrides.testSummary : false,
     testsPassed: 'testsPassed' in overrides ? overrides.testsPassed : ['Producer'],
     testsFailed: 'testsFailed' in overrides ? overrides.testsFailed : ['Granite'],
     testsErrored:
       'testsErrored' in overrides ? overrides.testsErrored : [buildPolicyUnitTestError()],
+  };
+};
+
+export const buildTestRuleInput = (overrides: Partial<TestRuleInput> = {}): TestRuleInput => {
+  return {
+    body: 'body' in overrides ? overrides.body : 'Steel',
+    logTypes: 'logTypes' in overrides ? overrides.logTypes : ['project'],
+    tests: 'tests' in overrides ? overrides.tests : [buildPolicyUnitTestInput()],
+  };
+};
+
+export const buildTestRuleRecord = (overrides: Partial<TestRuleRecord> = {}): TestRuleRecord => {
+  return {
+    __typename: 'TestRuleRecord',
+    id: 'id' in overrides ? overrides.id : 'Oklahoma',
+    name: 'name' in overrides ? overrides.name : 'Pants',
+    passed: 'passed' in overrides ? overrides.passed : true,
+    error: 'error' in overrides ? overrides.error : buildError(),
+    functions: 'functions' in overrides ? overrides.functions : buildTestRuleRecordFunctions(),
+  };
+};
+
+export const buildTestRuleRecordFunctions = (
+  overrides: Partial<TestRuleRecordFunctions> = {}
+): TestRuleRecordFunctions => {
+  return {
+    __typename: 'TestRuleRecordFunctions',
+    titleFunction:
+      'titleFunction' in overrides ? overrides.titleFunction : buildTestRuleSubRecord(),
+    dedupFunction:
+      'dedupFunction' in overrides ? overrides.dedupFunction : buildTestRuleSubRecord(),
   };
 };
 
@@ -1467,8 +1491,17 @@ export const buildTestRuleResponse = (
 ): TestRuleResponse => {
   return {
     __typename: 'TestRuleResponse',
-    testSummary: 'testSummary' in overrides ? overrides.testSummary : true,
-    results: 'results' in overrides ? overrides.results : [buildRuleResult()],
+    results: 'results' in overrides ? overrides.results : [buildTestRuleRecord()],
+  };
+};
+
+export const buildTestRuleSubRecord = (
+  overrides: Partial<TestRuleSubRecord> = {}
+): TestRuleSubRecord => {
+  return {
+    __typename: 'TestRuleSubRecord',
+    output: 'output' in overrides ? overrides.output : 'Rustic Frozen Bacon',
+    error: 'error' in overrides ? overrides.error : buildError(),
   };
 };
 

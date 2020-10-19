@@ -39,6 +39,7 @@ const PolicyFormTestSection: React.FC = () => {
   );
   return (
     <BaseRuleFormTestSection
+      type="policy"
       runTests={runTests}
       renderTestResults={
         <React.Fragment>

@@ -30,27 +30,23 @@ import { MODALS } from 'Components/utils/Modal';
 import Panel from 'Components/Panel';
 import useModal from 'Hooks/useModal';
 
-type MandatoryFormFields = Pick<RuleFormValues, 'body' | 'tests'>;
-type FormFields = MandatoryFormFields &
-  Pick<RuleFormValues, 'logTypes'> &
-  Pick<PolicyFormValues, 'resourceTypes'>;
-
 interface BaseRuleFormTestSectionProps {
+  type: 'rule' | 'policy';
   runTests: (testsToRun: DetectionTestDefinition[]) => any;
   renderTestResults: React.ReactElement;
 }
 
 const BaseRuleFormTestSection: React.FC<BaseRuleFormTestSectionProps> = ({
+  type,
   runTests,
   renderTestResults,
 }) => {
   // Read the values from the "parent" form. We expect a formik to be declared in the upper scope
   // since this is a "partial" form. If no Formik context is found this will error out intentionally
   const {
-    values: { tests, resourceTypes },
+    values: { tests },
     validateForm,
-  } = useFormikContext<FormFields>();
-  const isPolicy = resourceTypes !== undefined;
+  } = useFormikContext<RuleFormValues | PolicyFormValues>();
 
   const { showModal } = useModal();
 
@@ -159,7 +155,7 @@ const BaseRuleFormTestSection: React.FC<BaseRuleFormTestSectionProps> = ({
                     />
                     <Flex align="center" spacing={5}>
                       <Box fontSize="medium" fontWeight="medium" flexGrow={1} textAlign="right">
-                        {isPolicy
+                        {type === 'policy'
                           ? 'Test resource should be compliant'
                           : 'Test event should trigger an alert'}
                       </Box>

@@ -23,14 +23,11 @@ import { Button, Flex } from 'pouncejs';
 import { Form, Formik } from 'formik';
 import SubmitButton from 'Components/buttons/SubmitButton/SubmitButton';
 import useRouter from 'Hooks/useRouter';
-import {
-  BaseRuleFormTestSection as PolicyFormTestSection,
-  BaseRuleFormCoreSection,
-  BaseRuleFormEditorSection,
-} from 'Components/forms/BaseRuleForm';
+import { BaseRuleFormCoreSection, BaseRuleFormEditorSection } from 'Components/forms/BaseRuleForm';
 import ErrorBoundary from 'Components/ErrorBoundary';
 import FormSessionRestoration from 'Components/utils/FormSessionRestoration';
 import PolicyFormAutoRemediationSection from './PolicyFormAutoRemediationSection';
+import PolicyFormTestSection from './PolicyFormTestSection';
 
 // The validation checks that Formik will run
 const validationSchema = Yup.object().shape({

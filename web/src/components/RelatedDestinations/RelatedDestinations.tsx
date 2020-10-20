@@ -81,7 +81,7 @@ const RelatedDestinations: React.FC<RelatedDestinationsSectionProps> = ({
     return (
       <Flex align="center" spacing={2} mt={1}>
         {renderedDestinations.map(getLogo)}
-        <Text textAlign="center">{`+ ${numberOfExtraDestinations}`}</Text>
+        <Text textAlign="center">+ {numberOfExtraDestinations}</Text>
       </Flex>
     );
   }

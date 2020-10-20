@@ -221,6 +221,8 @@ func TestStreamEventsDeleteSQSError(t *testing.T) {
 
 // FIXME: add scaleup test
 
+// FIXME: add gradient test
+
 func initTest() (streamTestSqsClient *testutils.SqsMock, streamTestLambdaClient *testutils.LambdaMock, streamTestDeadline time.Time) {
 	// new mocks for each test
 	streamTestSqsClient = &testutils.SqsMock{}

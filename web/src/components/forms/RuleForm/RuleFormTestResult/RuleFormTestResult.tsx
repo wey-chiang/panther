@@ -54,7 +54,7 @@ const RuleFormTestResult: React.FC<RuleFormTestResultProps> = ({ testResult }) =
             {unknownError && (
               <React.Fragment>
                 <Box as="dt" color="navyblue-100">
-                  Unknown Error
+                  Error
                 </Box>
                 <Text as="dd" color="red-200">
                   {unknownError.message}

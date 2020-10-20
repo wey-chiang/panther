@@ -24,7 +24,7 @@ import urls from 'Source/urls';
 import { formatDatetime, formatNumber, minutesToString } from 'Helpers/utils';
 import { AlertDetails, RuleTeaser } from 'Pages/AlertDetails';
 import AlertDeliverySection from 'Pages/AlertDetails/AlertDetailsInfo/AlertDeliverySection';
-import AlertDestinationsSection from 'Components/cards/AlertCard/AlertDestinationsSection';
+import AlertDestinationsSection from 'Components/RelatedDestinations/AlertDestinationsSection';
 import { ListDestinations } from 'Source/graphql/queries';
 
 interface AlertDetailsInfoProps {

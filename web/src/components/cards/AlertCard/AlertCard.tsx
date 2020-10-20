@@ -27,6 +27,7 @@ import RelatedDestinations from 'Components/RelatedDestinations';
 import { AlertSummaryFull } from 'Source/graphql/fragments/AlertSummaryFull.generated';
 import { formatDatetime } from 'Helpers/utils';
 import BulletedLogType from 'Components/BulletedLogType';
+import useAlertDestinations from 'Hooks/useAlertDestinations';
 import UpdateAlertDropdown from '../../dropdowns/UpdateAlertDropdown';
 
 interface AlertCardProps {
@@ -34,6 +35,8 @@ interface AlertCardProps {
 }
 
 const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
+  const { alertDestinations, loading: loadingDestinations } = useAlertDestinations({ alert });
+
   return (
     <GenericItemCard>
       <GenericItemCard.Body>
@@ -62,7 +65,9 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
 
           <GenericItemCard.Value
             label="Destinations"
-            value={<RelatedDestinations alert={alert} />}
+            value={
+              <RelatedDestinations destinations={alertDestinations} loading={loadingDestinations} />
+            }
           />
           <GenericItemCard.Value
             label="Log Types"

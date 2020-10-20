@@ -25,15 +25,16 @@ import { formatDatetime, formatNumber, minutesToString } from 'Helpers/utils';
 import { AlertDetails, RuleTeaser } from 'Pages/AlertDetails';
 import AlertDeliverySection from 'Pages/AlertDetails/AlertDetailsInfo/AlertDeliverySection';
 import RelatedDestinations from 'Components/RelatedDestinations';
-import { ListDestinations } from 'Source/graphql/queries';
+import useAlertDestinations from 'Hooks/useAlertDestinations';
 
 interface AlertDetailsInfoProps {
   alert: AlertDetails['alert'];
   rule: RuleTeaser['rule'];
-  alertDestinations: ListDestinations['destinations'];
 }
 
-const AlertDetailsInfo: React.FC<AlertDetailsInfoProps> = ({ alert, rule, alertDestinations }) => {
+const AlertDetailsInfo: React.FC<AlertDetailsInfoProps> = ({ alert, rule }) => {
+  const { alertDestinations, loading: loadingDestinations } = useAlertDestinations({ alert });
+
   return (
     <Flex direction="column" spacing={4}>
       {rule && (
@@ -196,7 +197,11 @@ const AlertDetailsInfo: React.FC<AlertDetailsInfoProps> = ({ alert, rule, alertD
               </Box>
 
               <Box id="destinations" gridColumn="3/8">
-                <RelatedDestinations alert={alert} verbose />
+                <RelatedDestinations
+                  destinations={alertDestinations}
+                  loading={loadingDestinations}
+                  verbose
+                />
               </Box>
             </SimpleGrid>
           </Box>

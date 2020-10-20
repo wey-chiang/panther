@@ -21,9 +21,7 @@ import uniqBy from 'lodash/uniqBy';
 import sortBy from 'lodash/sortBy';
 import { Flex, Img, Text, Spinner } from 'pouncejs';
 import { DESTINATIONS } from 'Source/constants';
-import { AlertSummary } from 'Generated/schema';
-import { useListDestinations } from 'Source/graphql/queries';
-import useAlertDestinations from 'Hooks/useAlertDestinations';
+import { Destination } from 'Generated/schema';
 
 const getLogo = ({ outputType, outputId }) => {
   const { logo } = DESTINATIONS[outputType];
@@ -39,21 +37,16 @@ const getLogo = ({ outputType, outputId }) => {
   );
 };
 
-interface AlertDestinationsSectionProps {
-  alert: AlertSummary;
+interface RelatedDestinationsSectionProps {
+  destinations: Pick<Destination, 'outputType' | 'outputId' | 'displayName'>[];
+  loading: boolean;
   verbose?: boolean;
 }
-const RelatedDestinations: React.FC<AlertDestinationsSectionProps> = ({
-  alert,
+const RelatedDestinations: React.FC<RelatedDestinationsSectionProps> = ({
+  destinations,
+  loading,
   verbose = false,
 }) => {
-  const { data: destinationData, loading } = useListDestinations();
-
-  const { alertDestinations } = useAlertDestinations({
-    destinations: destinationData?.destinations,
-    alert,
-  });
-
   if (loading) {
     return <Spinner size="small" mr={2} />;
   }
@@ -62,7 +55,7 @@ const RelatedDestinations: React.FC<AlertDestinationsSectionProps> = ({
   if (verbose) {
     return (
       <React.Fragment>
-        {alertDestinations.map(destination => (
+        {destinations.map(destination => (
           <Flex key={destination.outputId} align="center" mb={2}>
             {getLogo(destination)}
             {destination.displayName}
@@ -74,17 +67,17 @@ const RelatedDestinations: React.FC<AlertDestinationsSectionProps> = ({
 
   // Else we should render destinations based if they are unique, in a column without the display name
   // Identifying unique destinations by outputType
-  const uniqueDestinations = sortBy(uniqBy(alertDestinations, 'outputType'), d => d.outputType);
+  const uniqueDestinations = sortBy(uniqBy(destinations, 'outputType'), d => d.outputType);
 
   /*
    * Using unique destinations here so we dont render multiple logo of the same type.
    *  i.e. If an alerts has only 2 different slack destinations will render Slack logo once
    */
-  if (alertDestinations.length - uniqueDestinations.length > 0) {
+  if (destinations.length - uniqueDestinations.length > 0) {
     // Limiting rendered destinations logos to 3
     const renderedDestinations = uniqueDestinations.slice(0, 3);
     // Showcasing how many additional destinations exist for this alert
-    const numberOfExtraDestinations = alertDestinations.length - renderedDestinations.length;
+    const numberOfExtraDestinations = destinations.length - renderedDestinations.length;
     return (
       <Flex align="center" spacing={2} mt={1}>
         {renderedDestinations.map(getLogo)}
@@ -95,7 +88,7 @@ const RelatedDestinations: React.FC<AlertDestinationsSectionProps> = ({
 
   return (
     <Flex align="center" spacing={2} mt={1}>
-      {alertDestinations.map(getLogo)}
+      {destinations.map(getLogo)}
     </Flex>
   );
 };

@@ -20,32 +20,35 @@ import uniqBy from 'lodash/uniqBy';
 import intersectionBy from 'lodash/intersectionBy';
 import { Destination } from 'Generated/schema';
 import { AlertSummaryFull } from 'Source/graphql/fragments/AlertSummaryFull.generated';
+import { useListDestinations } from 'Source/graphql/queries';
 
 interface UseAlertDestinationsProps {
   alert: AlertSummaryFull;
-  destinations: Pick<Destination, 'outputId' | 'outputType' | 'displayName'>[];
 }
 
 const useAlertDestinations = ({
   alert,
-  destinations,
 }: UseAlertDestinationsProps): {
   alertDestinations: Pick<Destination, 'outputType' | 'outputId' | 'displayName'>[];
+  loading: boolean;
 } => {
+  const { data: destinations, loading } = useListDestinations();
+
   const alertDestinations = React.useMemo(() => {
-    if (!alert || !destinations) {
+    if (!alert || !destinations?.destinations) {
       return [];
     }
 
     const uniqueDestinations = uniqBy(alert.deliveryResponses, 'outputId');
-    return intersectionBy(destinations, uniqueDestinations, d => d.outputId);
+    return intersectionBy(destinations.destinations, uniqueDestinations, d => d.outputId);
   }, [alert, destinations]);
 
   return React.useMemo(
     () => ({
       alertDestinations,
+      loading,
     }),
-    [alertDestinations]
+    [alertDestinations, loading]
   );
 };
 

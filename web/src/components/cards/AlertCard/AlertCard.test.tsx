@@ -67,6 +67,6 @@ describe('AlertCard', () => {
     const loadingInterfaceElement = getByAriaLabel('Loading...');
     expect(loadingInterfaceElement).toBeInTheDocument();
     await waitForElementToBeRemoved(loadingInterfaceElement);
-    expect(getByAltText('Logo')).toBeInTheDocument();
+    expect(getByAltText(`${destination.outputType} logo`)).toBeInTheDocument();
   });
 });

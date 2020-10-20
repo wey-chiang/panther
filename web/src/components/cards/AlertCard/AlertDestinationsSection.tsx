@@ -21,14 +21,22 @@ import uniqBy from 'lodash/uniqBy';
 import sortBy from 'lodash/sortBy';
 import { Flex, Img, Text, Spinner } from 'pouncejs';
 import { DESTINATIONS } from 'Source/constants';
-import GenericItemCard from 'Components/GenericItemCard';
 import { AlertSummary } from 'Generated/schema';
 import { useListDestinations } from 'Source/graphql/queries';
 import useAlertDestinations from 'Hooks/useAlertDestinations';
 
 const getLogo = ({ outputType, outputId }) => {
   const { logo } = DESTINATIONS[outputType];
-  return <GenericItemCard.Logo key={outputId} src={logo} />;
+  return (
+    <Img
+      key={outputId}
+      alt={`${outputType} logo`}
+      src={logo}
+      nativeWidth={18}
+      nativeHeight={18}
+      mr={2}
+    />
+  );
 };
 
 interface AlertDestinationsSectionProps {
@@ -56,13 +64,7 @@ const AlertDestinationsSection: React.FC<AlertDestinationsSectionProps> = ({
       <React.Fragment>
         {alertDestinations.map(destination => (
           <Flex key={destination.outputId} align="center" mb={2}>
-            <Img
-              alt={`${destination.outputType} logo`}
-              src={DESTINATIONS[destination.outputType].logo}
-              nativeWidth={18}
-              nativeHeight={18}
-              mr={2}
-            />
+            {getLogo(destination)}
             {destination.displayName}
           </Flex>
         ))}

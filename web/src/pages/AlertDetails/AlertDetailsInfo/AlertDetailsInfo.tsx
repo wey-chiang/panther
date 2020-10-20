@@ -22,9 +22,10 @@ import Linkify from 'Components/Linkify';
 import { Link as RRLink } from 'react-router-dom';
 import urls from 'Source/urls';
 import { formatDatetime, formatNumber, minutesToString } from 'Helpers/utils';
-import { AlertDetails, RuleTeaser, ListDestinations } from 'Pages/AlertDetails';
+import { AlertDetails, RuleTeaser } from 'Pages/AlertDetails';
 import AlertDeliverySection from 'Pages/AlertDetails/AlertDetailsInfo/AlertDeliverySection';
 import AlertDestinationsSection from 'Components/cards/AlertCard/AlertDestinationsSection';
+import { ListDestinations } from 'Source/graphql/queries';
 
 interface AlertDetailsInfoProps {
   alert: AlertDetails['alert'];

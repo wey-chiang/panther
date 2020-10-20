@@ -30,9 +30,9 @@ import { DEFAULT_LARGE_PAGE_SIZE } from 'Source/constants';
 import invert from 'lodash/invert';
 import useUrlParams from 'Hooks/useUrlParams';
 import useAlertDestinations from 'Hooks/useAlertDestinations';
+import { useListDestinations } from 'Source/graphql/queries';
 import { useAlertDetails } from './graphql/alertDetails.generated';
 import { useRuleTeaser } from './graphql/ruleTeaser.generated';
-import { useListDestinations } from './graphql/listDestinations.generated';
 import AlertDetailsBanner from './AlertDetailsBanner';
 import AlertDetailsInfo from './AlertDetailsInfo';
 

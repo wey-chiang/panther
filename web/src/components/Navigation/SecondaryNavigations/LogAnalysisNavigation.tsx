@@ -21,8 +21,7 @@ import { Box, Flex, Heading } from 'pouncejs';
 import urls from 'Source/urls';
 import FadeInTrail from 'Components/utils/FadeInTrail';
 import { AlertStatusesEnum } from 'Generated/schema';
-import { useListAvailableLogTypes } from 'Source/graphql/queries/listAvailableLogTypes.generated';
-import { useListDestinations } from 'Pages/AlertDetails';
+import { useListDestinations, useListAvailableLogTypes } from 'Source/graphql/queries';
 import NavLink from '../NavLink';
 
 const LogAnalysisNavigation: React.FC = () => {

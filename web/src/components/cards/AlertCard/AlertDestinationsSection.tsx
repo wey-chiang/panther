@@ -23,7 +23,7 @@ import { Flex, Img, Text, Spinner } from 'pouncejs';
 import { DESTINATIONS } from 'Source/constants';
 import GenericItemCard from 'Components/GenericItemCard';
 import { AlertSummary } from 'Generated/schema';
-import { useListDestinations } from 'Pages/AlertDetails';
+import { useListDestinations } from 'Source/graphql/queries';
 import useAlertDestinations from 'Hooks/useAlertDestinations';
 
 const getLogo = ({ outputType, outputId }) => {

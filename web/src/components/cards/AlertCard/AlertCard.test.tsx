@@ -26,7 +26,7 @@ import {
 import React from 'react';
 import { AlertStatusesEnum, DestinationTypeEnum, SeverityEnum } from 'Generated/schema';
 import urls from 'Source/urls';
-import { mockListDestinations } from 'Pages/AlertDetails';
+import { mockListDestinations } from 'Source/graphql/queries';
 import AlertCard from './index';
 
 describe('AlertCard', () => {

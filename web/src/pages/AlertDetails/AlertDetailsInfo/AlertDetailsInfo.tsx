@@ -24,7 +24,7 @@ import urls from 'Source/urls';
 import { formatDatetime, formatNumber, minutesToString } from 'Helpers/utils';
 import { AlertDetails, RuleTeaser } from 'Pages/AlertDetails';
 import AlertDeliverySection from 'Pages/AlertDetails/AlertDetailsInfo/AlertDeliverySection';
-import AlertDestinationsSection from 'Components/RelatedDestinations/AlertDestinationsSection';
+import RelatedDestinations from 'Components/RelatedDestinations';
 import { ListDestinations } from 'Source/graphql/queries';
 
 interface AlertDetailsInfoProps {
@@ -196,7 +196,7 @@ const AlertDetailsInfo: React.FC<AlertDetailsInfoProps> = ({ alert, rule, alertD
               </Box>
 
               <Box id="destinations" gridColumn="3/8">
-                <AlertDestinationsSection alert={alert} verbose />
+                <RelatedDestinations alert={alert} verbose />
               </Box>
             </SimpleGrid>
           </Box>

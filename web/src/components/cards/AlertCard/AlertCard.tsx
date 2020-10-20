@@ -23,7 +23,7 @@ import SeverityBadge from 'Components/badges/SeverityBadge';
 import React from 'react';
 import urls from 'Source/urls';
 import LinkButton from 'Components/buttons/LinkButton';
-import AlertDestinationsSection from 'Components/RelatedDestinations/AlertDestinationsSection';
+import RelatedDestinations from 'Components/RelatedDestinations';
 import { AlertSummaryFull } from 'Source/graphql/fragments/AlertSummaryFull.generated';
 import { formatDatetime } from 'Helpers/utils';
 import BulletedLogType from 'Components/BulletedLogType';
@@ -62,7 +62,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
 
           <GenericItemCard.Value
             label="Destinations"
-            value={<AlertDestinationsSection alert={alert} />}
+            value={<RelatedDestinations alert={alert} />}
           />
           <GenericItemCard.Value
             label="Log Types"

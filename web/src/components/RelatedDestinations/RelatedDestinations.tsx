@@ -43,7 +43,7 @@ interface AlertDestinationsSectionProps {
   alert: AlertSummary;
   verbose?: boolean;
 }
-const AlertDestinationsSection: React.FC<AlertDestinationsSectionProps> = ({
+const RelatedDestinations: React.FC<AlertDestinationsSectionProps> = ({
   alert,
   verbose = false,
 }) => {
@@ -100,4 +100,4 @@ const AlertDestinationsSection: React.FC<AlertDestinationsSectionProps> = ({
   );
 };
 
-export default AlertDestinationsSection;
+export default RelatedDestinations;

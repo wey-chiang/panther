@@ -19,7 +19,7 @@
 import React from 'react';
 import uniqBy from 'lodash/uniqBy';
 import sortBy from 'lodash/sortBy';
-import { Flex, Img, Text, Spinner } from 'pouncejs';
+import { Flex, Img, Text, Spinner, Box } from 'pouncejs';
 import { DESTINATIONS } from 'Source/constants';
 import { Destination } from 'Generated/schema';
 
@@ -30,8 +30,8 @@ const getLogo = ({ outputType, outputId }) => {
       key={outputId}
       alt={`${outputType} logo`}
       src={logo}
-      nativeWidth={18}
-      nativeHeight={18}
+      nativeWidth={24}
+      nativeHeight={24}
       mr={2}
     />
   );
@@ -48,7 +48,11 @@ const RelatedDestinations: React.FC<RelatedDestinationsSectionProps> = ({
   verbose = false,
 }) => {
   if (loading) {
-    return <Spinner size="small" mr={2} />;
+    return (
+      <Box height={24}>
+        <Spinner size="small" />
+      </Box>
+    );
   }
 
   // If component is verbose, we should render all destinations as row with the name of destination displayed

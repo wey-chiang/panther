@@ -23,6 +23,8 @@ import { Flex, Img, Text, Spinner, Box } from 'pouncejs';
 import { DESTINATIONS } from 'Source/constants';
 import { Destination } from 'Generated/schema';
 
+const size = 24;
+
 const getLogo = ({ outputType, outputId }) => {
   const { logo } = DESTINATIONS[outputType];
   return (
@@ -30,8 +32,8 @@ const getLogo = ({ outputType, outputId }) => {
       key={outputId}
       alt={`${outputType} logo`}
       src={logo}
-      nativeWidth={24}
-      nativeHeight={24}
+      nativeWidth={size}
+      nativeHeight={size}
       mr={2}
     />
   );
@@ -41,15 +43,17 @@ interface RelatedDestinationsSectionProps {
   destinations: Pick<Destination, 'outputType' | 'outputId' | 'displayName'>[];
   loading: boolean;
   verbose?: boolean;
+  limit?: number;
 }
 const RelatedDestinations: React.FC<RelatedDestinationsSectionProps> = ({
   destinations,
   loading,
   verbose = false,
+  limit = 3,
 }) => {
   if (loading) {
     return (
-      <Box height={24}>
+      <Box height={size}>
         <Spinner size="small" />
       </Box>
     );
@@ -79,7 +83,7 @@ const RelatedDestinations: React.FC<RelatedDestinationsSectionProps> = ({
    */
   if (destinations.length - uniqueDestinations.length > 0) {
     // Limiting rendered destinations logos to 3
-    const renderedDestinations = uniqueDestinations.slice(0, 3);
+    const renderedDestinations = uniqueDestinations.slice(0, limit);
     // Showcasing how many additional destinations exist for this alert
     const numberOfExtraDestinations = destinations.length - renderedDestinations.length;
     return (

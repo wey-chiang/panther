@@ -56,7 +56,7 @@ var (
 
 	// S3 Client used for pulling Log Processor output S3 object.
 	// We want to retry for ~1'
-	s3Client     s3iface.S3API         = s3.New(sess, request.WithRetryer(aws.NewConfig(), awsretry.NewConnectionErrRetryer(10)))
+	s3Client s3iface.S3API = s3.New(sess, request.WithRetryer(aws.NewConfig(), awsretry.NewConnectionErrRetryer(10)))
 )
 
 func resetAccountCache() {
